@@ -100,7 +100,8 @@ export function createMemoryRepo(opts: MemoryRepoOptions = {}): Repo & { _state:
       return clone(st.profile);
     },
     async updateProfile(patch: ProfilePatch) {
-      st.profile = { ...st.profile, ...patch, settings: patch.settings ? { ...st.profile.settings, ...patch.settings } : st.profile.settings };
+      const norm = patch.chesscomUsername !== undefined ? { chesscomUsername: patch.chesscomUsername ? patch.chesscomUsername.trim().toLowerCase() : null } : {};
+      st.profile = { ...st.profile, ...patch, ...norm, settings: patch.settings ? { ...st.profile.settings, ...patch.settings } : st.profile.settings };
       save();
       return clone(st.profile);
     },

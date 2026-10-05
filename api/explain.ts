@@ -4,7 +4,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { clip, requireUser, serviceClient } from './_lib.js';
 
 export const DAILY_LIMIT = 30;
-const MODEL = process.env.ANTHROPIC_MODEL ?? 'claude-haiku-4-5-20251001';
+const MODEL = process.env.ANTHROPIC_MODEL ?? 'claude-sonnet-5-5';
 
 export function buildPrompt(b: Record<string, unknown>): string {
   const side = b.color === 'b' ? 'Black' : 'White';

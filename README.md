@@ -70,7 +70,7 @@ Node 22+ is required (`stockfish@18.0.8` is pinned on purpose: the spec's result
 | `VITE_GOOGLE_AUTH=1` | browser + Vercel | shows "Continue with Google" (enable the provider in Supabase first) |
 | `SUPABASE_SERVICE_ROLE_KEY` | Vercel functions + local scripts only | **never** prefix with `VITE_` |
 | `SUPABASE_URL` | Vercel functions | same value as `VITE_SUPABASE_URL` |
-| `ANTHROPIC_API_KEY` | Vercel functions | optional; without it `/api/explain` returns 404 and the button stays hidden |
+| `ANTHROPIC_API_KEY` | Vercel functions | optional; without it `/api/explain` returns 404 and the button stays hidden. Model defaults to Sonnet 5.5; override with `ANTHROPIC_MODEL` |
 | `CHESSCOM_CONTACT_EMAIL` | Vercel functions | goes into the proxy's `User-Agent` |
 
 ## Deploy: GitHub + Vercel (CI/CD)

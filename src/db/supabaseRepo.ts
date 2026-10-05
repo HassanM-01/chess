@@ -405,7 +405,14 @@ export function createSupabaseRepo(sb: SupabaseClient, userId: string): Repo {
         ).select('game_id'),
       );
       // Re-analysis replaces mistakes and their own_mistake training items (also those whose mistake link was null).
-      ok(await sb.from('training_items').delete().eq('game_id', input.gameId).eq('user_id', userId).in('kind', ['own_mistake', 'variant']).select('id'));
+      ok(await sb.from('training_items').delete().eq('game_id', input.gameId).eq('user_id', userId).eq('kind', 'own_mistake').select('id'));
+      // Practice variants are separate: the 'variant' enum value only exists once migration 0004 has run, and a missing
+      // value must never stop an analysis from being saved. (They also cascade away with their mistake.)
+      try {
+        ok(await sb.from('training_items').delete().eq('game_id', input.gameId).eq('user_id', userId).eq('kind', 'variant').select('id'));
+      } catch (e) {
+        console.warn('could not clear old practice variants', e);
+      }
       ok(await sb.from('mistakes').delete().eq('game_id', input.gameId).eq('user_id', userId).select('id'));
       let mistakes: MistakeRow[] = [];
       if (input.mistakes.length) {

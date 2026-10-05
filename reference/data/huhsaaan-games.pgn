@@ -1,0 +1,559 @@
+[Event "Live Chess"]
+[Date "2025.09.13"]
+[White "huhsaaan"]
+[Black "i3eliev3"]
+[Result "0-1"]
+[ECO "A00"]
+[ECOUrl "https://www.chess.com/openings/Undefined"]
+[WhiteElo "519"]
+[BlackElo "585"]
+[TimeControl "600"]
+[Termination "i3eliev3 won by checkmate"]
+[Link "https://www.chess.com/game/live/143090780854"]
+
+1. h4 d5 2. Rh3 Bxh3 3. gxh3 d4 4. Nf3 Nc6 5. c3 e5 6. cxd4 exd4 7. a4 Bc5 8. d3 Nf6 9. e3 O-O 10. e4 Re8 11. h5 Nxh5 12. Bd2 f5 13. Bc3 dxc3 14. bxc3 fxe4 15. d4 exf3+ 16. Be2 fxe2 17. Qxe2 Rxe2+ 18. Kxe2 Qe7+ 19. Kd2 Nf4 20. Ra2 Qe2+ 21. Kc1 Qxa2 22. Na3 Qxf2 23. Kd1 Bxa3 24. a5 Re8 25. d5 Re1# 0-1
+
+
+[Event "Live Chess"]
+[Date "2025.09.13"]
+[White "i3eliev3"]
+[Black "huhsaaan"]
+[Result "0-1"]
+[ECO "A40"]
+[ECOUrl "https://www.chess.com/openings/Queens-Pawn-Opening"]
+[WhiteElo "575"]
+[BlackElo "694"]
+[TimeControl "600"]
+[Termination "huhsaaan won by resignation"]
+[Link "https://www.chess.com/game/live/143090733662"]
+
+1. d4 a5 2. d5 Ra6 3. e4 Re6 4. Nc3 Ra6 5. Bxa6 d6 6. Be2 f5 7. exf5 0-1
+
+
+[Event "Live Chess"]
+[Date "2026.09.29"]
+[White "Rayford21"]
+[Black "huhsaaan"]
+[Result "1-0"]
+[ECO "A00"]
+[ECOUrl "https://www.chess.com/openings/Undefined"]
+[WhiteElo "214"]
+[BlackElo "147"]
+[TimeControl "600"]
+[Termination "Rayford21 won by checkmate"]
+[Link "https://www.chess.com/game/live/184560146914"]
+
+1. f3 d5 2. f4 e6 3. Nf3 Nc6 4. d4 Nf6 5. Nc3 Bd6 6. e3 O-O 7. Bb5 Nb4 8. b3 Nxc2+ 9. Qxc2 a6 10. Bc4 a5 11. Bb5 c6 12. Ne5 Bc7 13. Ba3 Re8 14. Bc5 Ng4 15. h3 Nxe3 16. Qf2 Nf5 17. h4 cxb5 18. Nxb5 Qf6 19. Nxc7 Bd7 20. Qe2 Nxh4 21. Rxh4 Qxh4+ 22. Kd2 Qxf4+ 23. Ke1 Rac8 24. Nxd5 Bc6 25. Nxf4 Bxg2 26. Nxg2 Red8 27. Qd2 f6 28. Nd7 Rxd7 29. Nf4 Re8 30. Rc1 e5 31. Nh5 Rf8 32. Qg2 g6 33. Bxf8 Kxf8 34. Rc8+ Kf7 35. Qf2 gxh5 36. Qg2 Rxd4 37. Qxb7+ Kg6 38. Re8 Re4+ 39. Kd2 Rd4+ 40. Kc3 a4 41. Qc6 Rf4 42. bxa4 Rxa4 43. Qxa4 h4 44. Qxh4 h5 45. Qg3+ Kh6 46. Rh8# 1-0
+
+
+[Event "Live Chess"]
+[Date "2026.09.29"]
+[White "huhsaaan"]
+[Black "abdalrahmen-ml"]
+[Result "0-1"]
+[ECO "D00"]
+[ECOUrl "https://www.chess.com/openings/Queens-Pawn-Opening-1...d5-2.e3"]
+[WhiteElo "182"]
+[BlackElo "267"]
+[TimeControl "600"]
+[Termination "abdalrahmen-ml won by resignation"]
+[Link "https://www.chess.com/game/live/184559271254"]
+
+1. d4 d5 2. e3 Qd6 3. Nf3 c5 4. Nc3 cxd4 5. exd4 Nf6 6. Bb5+ Bd7 7. Bd3 b5 8. O-O b4 9. Nb5 Qe6 10. Nc7+ Kd8 11. Nxa8 Bc6 12. Ng5 Qc8 13. a3 Bxa8 14. axb4 h6 15. Nxf7+ Ke8 16. Ne5 Qc6 17. Nxc6 Nxc6 18. Bb5 Bb7 19. Rxa7 Ne4 20. Ra8+ Bxa8 21. Qe1 e6 22. f3 Bxb4 23. fxe4 Bxe1 24. Rxe1 h5 25. Bg5 Bb7 26. e5 h4 27. g3 hxg3 28. hxg3 Rh5 29. g4 Rxg5 30. Re2 Rxg4+ 31. Kh2 Rxd4 32. Rg2 Rb4 33. Be2 Rxb2 34. Bh5+ Kd7 35. Rxg7+ Kc8 36. Be8 Nxe5 37. Rg5 Nf3+ 38. Kg3 Nxg5 39. Ba4 Rxc2 40. Bxc2 Ba6 41. Bg6 d4 42. Bf7 Kd7 43. Bxe6+ Kxe6 0-1
+
+
+[Event "Live Chess"]
+[Date "2026.09.29"]
+[White "dhaimaa"]
+[Black "huhsaaan"]
+[Result "0-1"]
+[ECO "C30"]
+[ECOUrl "https://www.chess.com/openings/Kings-Gambit"]
+[WhiteElo "119"]
+[BlackElo "219"]
+[TimeControl "600"]
+[Termination "huhsaaan won by resignation"]
+[Link "https://www.chess.com/game/live/184558514756"]
+
+1. e4 e5 2. f4 Nf6 3. fxe5 Nxe4 4. Nf3 d5 5. Nd4 Qh4+ 6. g3 Qg5 7. h4 Qxe5 8. Nf3 Na6 9. Nxe5 Bd6 10. Nxf7 Kxf7 11. Qh5+ Kg8 12. Be2 Nac5 13. Qe8+ Bf8 14. Bh5 Nxg3 15. Qxf8+ Kxf8 16. Rg1 Nxh5 17. d4 Ne4 18. Rg4 Nef6 19. Rg5 h6 20. Rg1 Bd7 21. Nc3 Re8+ 22. Kd1 Bg4+ 23. Kd2 b6 24. Ne4 Rxe4 25. Rf1 Rxd4+ 26. Kc3 Ra4 27. Kb3 b5 28. a3 c5 29. Be3 c4+ 30. Ka2 b4 31. Bc5+ Kf7 32. Rae1 Rc8 33. Bd4 c3 34. bxc3 bxc3 35. Bxc3 Rxc3 36. Kb2 Rh3 37. Rxf6+ Nxf6 38. c4 Rxc4 39. Rd1 Bxd1 40. Kb1 0-1
+
+
+[Event "Live Chess"]
+[Date "2026.09.29"]
+[White "huhsaaan"]
+[Black "Sebbekung"]
+[Result "0-1"]
+[ECO "D00"]
+[ECOUrl "https://www.chess.com/openings/Queens-Pawn-Opening-1...d5-2.e3"]
+[WhiteElo "178"]
+[BlackElo "260"]
+[TimeControl "600"]
+[Termination "Sebbekung won by checkmate"]
+[Link "https://www.chess.com/game/live/184558044466"]
+
+1. d4 d5 2. e3 Nc6 3. Bd3 Nf6 4. Nh3 Bxh3 5. gxh3 e6 6. O-O Qd6 7. Bd2 Nb4 8. c3 Nxd3 9. Qe2 Nxb2 10. Bc1 Na4 11. Qb5+ Qc6 12. Qb2 Nxb2 13. Bxb2 Ne4 14. f3 Ng5 15. h4 Nh3+ 16. Kh1 g5 17. a4 gxh4 18. e4 dxe4 19. fxe4 Qxe4+ 20. Rf3 Qxf3# 0-1
+
+
+[Event "Live Chess"]
+[Date "2026.09.29"]
+[White "hckjhxhj"]
+[Black "huhsaaan"]
+[Result "1-0"]
+[ECO "A40"]
+[ECOUrl "https://www.chess.com/openings/Queens-Pawn-Opening-Keres-Defense-3.Bd2"]
+[WhiteElo "333"]
+[BlackElo "225"]
+[TimeControl "600"]
+[Termination "hckjhxhj won by resignation"]
+[Link "https://www.chess.com/game/live/184556674288"]
+
+1. d4 e6 2. c4 Bb4+ 3. Bd2 Bd6 4. Nc3 b6 5. Nf3 Nh6 6. e3 O-O 7. Be2 Na6 8. Qc2 f5 9. e4 e5 10. dxe5 Bxe5 11. Nxe5 Qe8 12. O-O-O Qxe5 13. g3 d6 14. Bf4 Qa5 15. exf5 Bxf5 16. Qb3 Rab8 17. c5+ Kh8 18. Bxa6 Qxa6 19. cxd6 cxd6 20. Bxd6 Rbd8 21. Bxf8 Rxf8 22. Rhe1 Ng4 23. Rf1 Nxh2 24. Rh1 Ng4 25. Rh5 Bg6 26. Rg5 Rxf2 27. Rxg4 Bf5 28. Rgd4 Qa5 29. R1d2 Rf1+ 30. Nd1 Qc5+ 31. Qc2 Bxc2 32. Rxc2 h5 33. Rd2 Qg5 34. Rc7 Qd8 35. Rxd8+ Kh7 36. Rxa7 Kh6 37. Rh8+ Kg5 38. Rb7 Rf3 39. Rxg7+ Kf6 40. Rb7 Rxg3 41. Rxb6+ Kg5 42. Rb5+ Kh4 43. Rhxh5+ Kg4 44. Rhg5+ Kh3 45. Rxg3+ Kxg3 46. a3 Kg2 47. a4 Kf1 48. a5 Ke1 49. a6 Ke2 50. a7 Kd3 51. a8=Q 1-0
+
+
+[Event "Live Chess - Odds Chess"]
+[Date "2026.09.28"]
+[White "sahil01287"]
+[Black "huhsaaan"]
+[Result "1-0"]
+[SetUp "1"]
+[FEN "rnbqkbnr/pppppppp/8/8/8/8/1PPPPPPP/2BQKBNR w Kkq - 0 1"]
+[ECO "C23"]
+[ECOUrl "https://www.chess.com/openings/Bishops-Opening"]
+[WhiteElo "1031"]
+[BlackElo "277"]
+[TimeControl "600"]
+[Termination "sahil01287 won by checkmate"]
+[Link "https://www.chess.com/game/live/184525149676"]
+
+1. e4 e5 2. Bc4 Nh6 3. Nf3 Bd6 4. d4 O-O 5. O-O c6 6. Ng5 g6 7. h4 b6 8. h5 Ba6 9. Bxa6 Nxa6 10. f4 f6 11. Nh3 gxh5 12. fxe5 fxe5 13. Bxh6 Rf6 14. Qxh5 Rxf1+ 15. Kxf1 Qf6+ 16. Kg1 Nb4 17. Ng5 Qd8 18. Qf7+ Kh8 19. Qxh7# 1-0
+
+
+[Event "Live Chess"]
+[Date "2026.09.28"]
+[White "huhsaaan"]
+[Black "YossufM"]
+[Result "1/2-1/2"]
+[ECO "D00"]
+[ECOUrl "https://www.chess.com/openings/Queens-Pawn-Opening-1...d5-2.e3-e6"]
+[WhiteElo "277"]
+[BlackElo "684"]
+[TimeControl "600"]
+[Termination "Game drawn by repetition"]
+[Link "https://www.chess.com/game/live/184506717720"]
+
+1. d4 d5 2. e3 e6 3. Bb5+ c6 4. f4 Bb4+ 5. c3 Bd6 6. Na3 cxb5 7. Nxb5 Bc7 8. Nxc7+ Qxc7 9. Nh3 Nf6 10. O-O Nc6 11. Ng5 h6 12. Bd2 hxg5 13. fxg5 Nh7 14. Qf3 Nxg5 15. Qxf7+ Nxf7 16. c4 b5 17. cxb5 a6 18. Rf6 gxf6 19. bxc6 Qxc6 20. Bb4 Rb8 21. Ba5 Rxb2 22. Rf1 Rh4 23. a4 Qxa4 24. Bc3 Qa3 25. Bxb2 Qxb2 26. g3 Rh5 27. g4 Rh6 28. h3 Rxh3 29. Rf2 e5 30. Kg2 Bxg4 31. Rxb2 Rxe3 32. Rb8+ Kd7 33. Rb7+ Kc6 34. Rb2 exd4 35. Rb4 Re2+ 36. Kf1 Rh2 37. Rxd4 Ne5 38. Ra4 Nd3 39. Rxa6+ Kc5 40. Ra5+ Kd4 41. Ra4+ Ke5 42. Rxg4 Rh1+ 43. Kg2 Rh6 44. Kf3 f5 45. Rf4 Rh5 46. Rd4 Ne1+ 47. Ke2 Nc2 48. Rd2 Nb4 49. Rb2 Nc6 50. Kd3 Rh3+ 51. Kc2 Nd4+ 52. Kb1 Rh1+ 53. Ka2 Nf3 54. Rb3 Rf1 55. Re3+ Kf4 56. Re2 Nd4 57. Rd2 Nb5 58. Rb2 Nc3+ 59. Ka3 Ra1+ 60. Kb3 Nd1 61. Rf2+ Nxf2 62. Kb2 Nd1+ 63. Kxa1 Nc3 64. Kb2 Na4+ 65. Kb3 Nc5+ 66. Kc3 Na4+ 67. Kd4 Nb6 68. Kc5 Na4+ 69. Kxd5 Nc3+ 70. Ke6 Ne4 71. Kd5 Nc3+ 72. Ke6 Ne4 73. Kd5 Ng3 74. Ke6 Nh5 75. Kd5 Kf3 76. Kd4 Kg4 77. Ke5 f4 78. Ke4 f3 79. Ke3 Kg3 80. Ke4 f2 81. Ke5 f1=Q 82. Ke6 Qe1+ 83. Kf7 Qe5 84. Kg6 Kf4 85. Kh6 Kf5 86. Kxh5 Ke6+ 87. Kg6 Kd5 88. Kf7 Kd4 89. Kg6 Qe4+ 90. Kg5 Ke5 91. Kh6 Qe3+ 92. Kg6 Qe2 93. Kg5 Ke4 94. Kf6 Qe3 95. Ke6 Qd3 96. Kf6 Qc3+ 97. Kg5 Qd3 98. Kf6 Qe3 99. Ke6 Qf3 100. Kd6 Qe3 101. Ke6 1/2-1/2
+
+
+[Event "Live Chess"]
+[Date "2026.09.28"]
+[White "YossufM"]
+[Black "huhsaaan"]
+[Result "1-0"]
+[ECO "B07"]
+[ECOUrl "https://www.chess.com/openings/Pirc-Defense"]
+[WhiteElo "768"]
+[BlackElo "227"]
+[TimeControl "600"]
+[Termination "YossufM won by checkmate"]
+[Link "https://www.chess.com/game/live/184506367214"]
+
+1. e4 d6 2. Bb5+ c6 3. Ba4 Nf6 4. Nc3 Nxe4 5. Nxe4 Bf5 6. Ng5 d5 7. d4 Qa5+ 8. b4 Qxa4 9. Ne2 Na6 10. Nc3 O-O-O 11. Nxa4 Nxb4 12. Nxf7 Re8 13. Nxh8 g5 14. Qh5 Nxc2+ 15. Kd2 Bg7 16. Qxe8+ Kc7 17. Qxe7+ Kb8 18. Qxg7 Nxa1 19. Qxg5 Be4 20. Qd8# 1-0
+
+
+[Event "Live Chess"]
+[Date "2026.09.28"]
+[White "huhsaaan"]
+[Black "MattFitz06"]
+[Result "0-1"]
+[ECO "B01"]
+[ECOUrl "https://www.chess.com/openings/Scandinavian-Defense"]
+[WhiteElo "227"]
+[BlackElo "348"]
+[TimeControl "600"]
+[Termination "MattFitz06 won by checkmate"]
+[Link "https://www.chess.com/game/live/184480049920"]
+
+1. e4 d5 2. Bd3 e5 3. Nf3 Nf6 4. Nc3 Be6 5. Nxe5 Qd6 6. Nc4 Qc6 7. e5 Nh5 8. Qxh5 g6 9. Qg5 Bg7 10. Na4 Qxa4 11. h3 Nd7 12. O-O f6 13. Bxg6+ Kd8 14. Qxf6+ Nxf6 15. d4 hxg6 16. Bg5 Qxc4 17. exf6 Bf8 18. Rae1 Qc6 19. Re3 Bd6 20. Rxe6 Re8 21. Re3 Kd7 22. Rxe8 Rxe8 23. Re1 Rxe1# 0-1
+
+
+[Event "Live Chess"]
+[Date "2026.09.28"]
+[White "YossufM"]
+[Black "huhsaaan"]
+[Result "1-0"]
+[ECO "A02"]
+[ECOUrl "https://www.chess.com/openings/Birds-Opening-1...c5"]
+[WhiteElo "768"]
+[BlackElo "289"]
+[TimeControl "600"]
+[Termination "YossufM won by resignation"]
+[Link "https://www.chess.com/game/live/184478979732"]
+
+1. f4 c5 2. d3 e6 3. Nc3 f5 4. Nh3 b6 5. a4 Be7 6. b3 Nf6 7. e4 g6 8. g3 Bb7 9. Ba3 d5 10. Ng5 dxe4 11. Nxe6 Qd6 12. Nc7+ Qxc7 13. Nd5 Nxd5 14. c3 g5 15. Bh3 exd3 16. Bxf5 Rf8 17. Bxd3 Nxc3 18. Qc2 Nb5 19. Qb1 Bxh1 20. Bxb5+ Kd8 21. fxg5 Bxg5 22. Qd1+ Kc8 23. Rc1 Bxc1 24. Qxc1 Qe7+ 25. Kd1 Bf3+ 26. Kc2 Qe4+ 27. Kb2 a6 28. Qc3 Qe2+ 29. Bxe2 Bxe2 30. Qc2 Bg4 31. b4 Nd7 32. bxc5 Rf7 33. Qe4 bxc5 34. Qxg4 Rf2+ 35. Kc3 Ra7 36. Bxc5 Rb7 37. Bxf2 a5 38. Qg8+ Kc7 39. g4 Rb1 40. Qxh7 Rc1+ 41. Kd4 Kc6 42. Qh6+ Nf6 43. Qxf6+ Kc7 44. Qf4+ Kd8 45. Qxc1 1-0
+
+
+[Event "Live Chess"]
+[Date "2026.09.28"]
+[White "huhsaaan"]
+[Black "YossufM"]
+[Result "0-1"]
+[ECO "A40"]
+[ECOUrl "https://www.chess.com/openings/Queens-Pawn-Opening"]
+[WhiteElo "304"]
+[BlackElo "749"]
+[TimeControl "600"]
+[Termination "YossufM won by resignation"]
+[Link "https://www.chess.com/game/live/184478774442"]
+
+1. d4 g5 2. Bxg5 f6 3. Bf4 e5 4. dxe5 Bb4+ 5. Bd2 Bc5 6. Nf3 Ne7 7. h4 d6 8. Rh3 h5 9. Ba5 dxe5 10. c4 Nbc6 11. Na3 Nxa5 12. e3 Bd7 13. Rg3 b5 14. Bd3 bxc4 15. Bf5 Nxf5 16. Rg7 Nxg7 17. Qa4 Nf5 18. Qxa5 Rb8 19. Qxc5 c6 20. Qxc4 Rxb2 21. Qf7+ Kxf7 0-1
+
+
+[Event "Live Chess"]
+[Date "2026.09.27"]
+[White "huhsaaan"]
+[Black "YossufM"]
+[Result "0-1"]
+[ECO "A00"]
+[ECOUrl "https://www.chess.com/openings/Grob-Opening"]
+[WhiteElo "324"]
+[BlackElo "724"]
+[TimeControl "600"]
+[Termination "YossufM won on time"]
+[Link "https://www.chess.com/game/live/184470236756"]
+
+1. g4 c5 2. b3 Na6 3. Nh3 Nh6 4. Bg2 g6 5. Bb2 Bg7 6. Bxg7 Ng8 7. Be5 f6 8. Bf4 e5 9. Be3 Ne7 10. c4 d6 11. Qc1 Bxg4 12. Ng1 Bf5 13. Qa3 Nb4 14. Qc1 Nec6 15. Bxc6+ bxc6 16. Qc3 Na6 17. h4 Rb8 18. Bh6 Rg8 19. Na3 g5 20. Nf3 e4 21. Rh3 exf3 22. Rxf3 Bg4 23. Rg3 Bh5 24. hxg5 fxg5 25. Re3+ Kf7 26. Rh3 Kg6 27. Bxg5 Kxg5 28. Rg3+ Bg4 29. Qe3+ Kf6 30. Rxg4 Rxg4 31. Qf3+ Kg5 32. Rc1 Qd7 33. e3 Nb4 34. Rc3 Nxa2 35. Rc2 Nb4 36. Rc3 Na2 37. Rc2 Nb4 38. Nb1 Nxc2+ 39. Kd1 Na1 40. Qe4 Nxb3 41. Nc3 Rxe4 42. Nxe4+ Kg6 43. Ng3 Qg4+ 44. Ne2 Re8 45. f4 Qg1+ 46. Nxg1 Re6 47. Nh3 Kf7 48. Ng5+ Ke8 49. Nxh7 Rg6 50. f5 Rg7 51. Nf6+ Kd8 52. e4 Kc7 53. Ne8+ Kb6 54. f6 Ka5 55. fxg7 Ka4 0-1
+
+
+[Event "Live Chess"]
+[Date "2026.09.18"]
+[White "huhsaaan"]
+[Black "YossufM"]
+[Result "0-1"]
+[ECO "A00"]
+[ECOUrl "https://www.chess.com/openings/Undefined"]
+[WhiteElo "352"]
+[BlackElo "686"]
+[TimeControl "600"]
+[Termination "YossufM won by checkmate"]
+[Link "https://www.chess.com/game/live/184026823824"]
+
+1. h4 f6 2. Rh3 e6 3. g4 d6 4. Bg2 Nc6 5. Rc3 b5 6. Na3 Nh6 7. d3 Nxg4 8. Rc4 bxc4 9. Bf3 Nh2 10. Nxc4 Ba6 11. Na3 h5 12. Bg2 g6 13. Be3 Rb8 14. Qd2 Rxb2 15. Qc3 Rb6 16. Bf3 Ne5 17. Kd2 d5 18. Nh3 Bb5 19. Rb1 Ra6 20. Rxb5 Bxa3 21. Qxa3 Rxa3 22. Bxd5 exd5 23. Nf4 Nf1+ 24. Kd1 Rxa2 25. Nxd5 Ra1+ 26. Bc1 a6 27. Ke1 Rxc1# 0-1
+
+
+[Event "Live Chess"]
+[Date "2026.09.18"]
+[White "YossufM"]
+[Black "huhsaaan"]
+[Result "1-0"]
+[ECO "A00"]
+[ECOUrl "https://www.chess.com/openings/Mieses-Opening"]
+[WhiteElo "615"]
+[BlackElo "399"]
+[TimeControl "600"]
+[Termination "YossufM won by checkmate"]
+[Link "https://www.chess.com/game/live/184026395636"]
+
+1. d3 h5 2. e3 Rh6 3. Kd2 b5 4. b4 Nc6 5. Nc3 Nxb4 6. Nxb5 Rb8 7. Nxa7 Bb7 8. Rb1 Nxa2 9. Ke1 Ra8 10. Nb5 Ra5 11. Nd4 g5 12. g3 Bg7 13. Ngf3 Ra4 14. Rxb7 Qa8 15. Rb2 Qa5+ 16. Bd2 h4 17. Bxa5 Rxa5 18. Qa1 Nf6 19. Rxa2 Nh5 20. Rxa5 Rb6 21. Ra8+ Rb8 22. Rxb8# 1-0
+
+
+[Event "Live Chess"]
+[Date "2026.09.17"]
+[White "sahil01287"]
+[Black "huhsaaan"]
+[Result "1-0"]
+[ECO "B21"]
+[ECOUrl "https://www.chess.com/openings/Sicilian-Defense-Smith-Morra-Gambit-2...cxd4-3.Qxd4-Nc6-4.Qd1"]
+[WhiteElo "1007"]
+[BlackElo "501"]
+[TimeControl "600"]
+[Termination "sahil01287 won by checkmate"]
+[Link "https://www.chess.com/game/live/180023348368"]
+
+1. e4 c5 2. d4 cxd4 3. Qxd4 Nc6 4. Qd1 e6 5. Nc3 h5 6. Bb5 Qa5 7. Nf3 a6 8. Bxc6 bxc6 9. O-O Rb8 10. Nd4 Rh6 11. Bxh6 gxh6 12. Qxh5 Qxh5 13. b3 Bg7 14. Rfd1 c5 15. Nce2 Bxd4 16. Nxd4 cxd4 17. Rxd4 Bb7 18. Rad1 Qg4 19. f3 Qh4 20. e5 Ne7 21. Rxh4 Rc8 22. Rxh6 Ng8 23. Rh8 Kd8 24. Rxg8+ Kc7 25. Rg7 d5 26. Rxf7+ Kb6 27. c4 dxc4 28. Rd6+ Kc5 29. Rxe6 Rg8 30. Rxb7 Rg5 31. b4+ Kd4 32. Rd7+ Kc3 33. f4 Rh5 34. Rxa6 Rh4 35. Ra3+ Kc2 36. b5 Rxf4 37. b6 Rf1+ 38. Kxf1 Kc1 39. Ke2 Kc2 40. Rd2+ Kc1 41. Rc3+ Kb1 42. Rcc2 Ka1 43. Rd1# 1-0
+
+
+[Event "Live Chess"]
+[Date "2026.09.29"]
+[White "huhsaaan"]
+[Black "nahuuu_20"]
+[Result "0-1"]
+[ECO "C55"]
+[ECOUrl "https://www.chess.com/openings/Italian-Game-Two-Knights-Defense-4.O-O-Nxe4"]
+[WhiteElo "126"]
+[BlackElo "351"]
+[TimeControl "600"]
+[Termination "nahuuu_20 won by resignation"]
+[Link "https://www.chess.com/game/live/184566185644"]
+
+1. e4 e5 2. Nf3 Nc6 3. Bc4 Nf6 4. O-O Nxe4 5. d3 Nf6 6. Re1 d6 7. Nc3 Ng4 8. Re4 Nf6 9. a3 d5 10. d4 dxc4 11. Qe2 Bg4 12. Rxg4 Nxg4 13. Nh4 Qxh4 14. g3 Qxh2+ 15. Kf1 Nxd4 16. Qxg4 Nxc2 17. Qxc4 Bd6 18. Ra2 Qg1+ 19. Kxg1 e4 20. Nxe4 Ne1 21. Bd2 Nf3+ 22. Kg2 Nxd2 23. Qd3 Nxe4 24. Qe3 f5 0-1
+
+[Event "Live Chess"]
+[Date "2026.09.29"]
+[White "huhsaaan"]
+[Black "6j_ix"]
+[Result "1-0"]
+[ECO "C45"]
+[ECOUrl "https://www.chess.com/openings/Scotch-Game"]
+[WhiteElo "158"]
+[BlackElo "116"]
+[TimeControl "600"]
+[Termination "huhsaaan won - game abandoned"]
+[Link "https://www.chess.com/game/live/184575524426"]
+
+1. e4 e5 2. Nf3 Nc6 3. d4 Bb4+ 4. c3 Ba5 5. Be2 Nf6 6. O-O g5 7. Bxg5 Nxe4 8. Bh4 b6 9. Bxd8 Kxd8 10. Bd3 Nxc3 11. bxc3 d6 12. Re1 Nxd4 13. cxd4 exd4 14. Nxd4 Bg4 15. Qxg4 Bxe1 16. Kf1 Bc3 17. Nxc3 Ke7 18. Qh4+ f6 19. Ne4 1-0
+
+
+[Event "Live Chess"]
+[Date "2026.09.30"]
+[White "huhsaaan"]
+[Black "Saurabh_DL6"]
+[Result "1-0"]
+[ECO "B01"]
+[ECOUrl "https://www.chess.com/openings/Scandinavian-Defense-Closed"]
+[WhiteElo "124"]
+[BlackElo "100"]
+[TimeControl "600"]
+[Termination "huhsaaan won - game abandoned"]
+[Link "https://www.chess.com/game/live/184621134504"]
+
+1. e4 d5 2. Nc3 h5 3. d4 dxe4 4. Nxe4 h4 5. Bc4 Na6 6. c3 Nb4 7. cxb4 Rh6 8. Be3 Bg4 9. Qxg4 Rg6 10. Qxh4 Rc6 11. Qh8 Nf6 12. Qxf8+ Kxf8 13. b3 Rxc4 14. bxc4 Qe8 15. f3 g5 16. Nxg5 Ng4 17. fxg4 a5 18. bxa5 Rxa5 19. Bd2 Rxg5 20. Bxg5 b5 21. Bh6+ Kg8 22. cxb5 f5 23. gxf5 Qf8 24. O-O-O 1-0
+
+
+[Event "Live Chess"]
+[Date "2026.09.30"]
+[White "huhsaaan"]
+[Black "hhh-3"]
+[Result "1-0"]
+[ECO "C42"]
+[ECOUrl "https://www.chess.com/openings/Petrovs-Defense-3.d3-Nc6-4.c3"]
+[WhiteElo "143"]
+[BlackElo "100"]
+[TimeControl "600"]
+[Termination "huhsaaan won - game abandoned"]
+[Link "https://www.chess.com/game/live/184623820182"]
+
+1. e4 e5 2. Nf3 Nf6 3. d3 Nc6 4. c3 Bb4 5. a3 Bxc3+ 6. bxc3 Ng4 7. h3 d5 8. hxg4 dxe4 9. dxe4 Bxg4 10. Rh4 Qxd1+ 11. Kxd1 Rd8+ 12. Ke1 Bxf3 13. gxf3 Nd4 14. cxd4 exd4 15. Nd2 d3 16. Bxd3 b5 17. Bxb5+ Ke7 18. Nc4 Rd4 19. Nd2 c5 20. Rb1 c4 21. Nxc4 Rd6 22. Nxd6 Kxd6 23. Bf4+ Ke7 24. e5 Rb8 25. Rxh7 a5 26. Bg5+ Kf8 27. Ba4 f6 28. exf6 Rxb1+ 29. Ke2 Rb2+ 30. Kd3 Rxf2 31. Ke3 Rxf3+ 32. Kxf3 1-0
+
+
+[Event "Live Chess"]
+[Date "2026.09.30"]
+[White "huhsaaan"]
+[Black "Jointhewinxclub"]
+[Result "1-0"]
+[ECO "B00"]
+[ECOUrl "https://www.chess.com/openings/Kings-Pawn-Opening"]
+[WhiteElo "166"]
+[BlackElo "135"]
+[TimeControl "600"]
+[Termination "huhsaaan won by resignation"]
+[Link "https://www.chess.com/game/live/184624608162"]
+
+1. e4 h5 2. d4 f6 3. Nf3 b5 4. Bxb5 c6 5. Ba4 a5 6. c3 Ra6 7. O-O Qc7 8. c4 h4 9. Nxh4 Rxh4 10. g3 Rxe4 11. Bb3 c5 12. dxc5 e5 13. Qc2 d5 14. cxd5 Nd7 15. Qxe4 Nxc5 16. Qh4 Nxb3 17. axb3 Rc6 18. Qh8 Rxc1 19. Qh7 Bc5 20. Rxc1 Ba6 21. Qxg8+ Kd7 22. Qxg7+ Kd6 23. Rd1 Qb6 24. Qg6 Bxf2+ 25. Kg2 Qxb3 26. Qxf6+ Kc5 27. Rc1+ Kxd5 28. Rd1+ Bd3 29. Nd2 Qxd1 30. Rxd1 e4 31. Qf7+ Kd4 32. Kxf2 e3+ 33. Kf3 Be2+ 34. Kf4 Bxd1 35. Qd7+ Kc5 36. Ne4+ Kc4 37. Qc7+ Kb3 38. Nc5+ Kxb2 39. Na4+ Kb1 40. Nc3+ Kc2 41. Ne4+ Kd3 42. Nc5+ Kd2 43. Qd6+ Ke2 44. g4 Kf1 45. g5 e2 46. Qe6 Bb3 47. Nxb3 a4 48. Nc1 a3 49. Nxe2 a2 50. Qxa2 1-0
+
+
+[Event "Live Chess"]
+[Date "2026.10.01"]
+[White "huhsaaan"]
+[Black "YossufM"]
+[Result "0-1"]
+[ECO "C10"]
+[ECOUrl "https://www.chess.com/openings/French-Defense-Normal-Variation...3.Nc3-Nc6-4.Nf3-Nf6"]
+[WhiteElo "160"]
+[BlackElo "501"]
+[TimeControl "600"]
+[Termination "YossufM won on time"]
+[Link "https://www.chess.com/game/live/184664206090"]
+
+1. e4 d5 2. Nc3 e6 3. Nf3 Nc6 4. d4 Nf6 5. Bb5 Bb4 6. Bg5 Nxe4 7. Bxd8 Kxd8 8. O-O Nd6 9. Bxc6 bxc6 10. Na4 Ba6 11. Re1 Bb5 12. Re3 Bxa4 13. Rb3 Ba5 14. Ra3 Bb5 15. Rxa5 a6 16. Ra3 e5 17. dxe5 f5 18. Ng5 Rf8 19. Nxh7 Rf7 20. Ng5 Re7 21. Rh3 Rxe5 22. Rh8+ Re8 23. Nf7+ Nxf7 24. Rh7 Rg8 25. Rh5 f4 26. Rf5 Nd6 27. Rxf4 g5 28. Rg4 Nf5 29. Rg3 a5 30. Qg4 Nh6 31. Qh5 Rh8 32. Rxg5 Kc8 33. Re5 Kb7 34. Re6 Raf8 35. g4 Rfg8 36. f3 Rf8 37. g5 Rxf3 38. gxh6 Re3 39. Qg5 Rxe6 40. Rf1 Bxf1 41. Kxf1 Ree8 42. Qg7 Rhg8 43. Qf7 Ref8 44. Qxf8 Rxf8+ 45. Ke1 Re8+ 46. Kd1 Rd8 47. b3 Rf8 48. a3 Rf1+ 49. Kd2 Rf2+ 50. Kc3 Rf3+ 51. Kb2 d4 52. h7 Rf8 53. h8=Q Rxh8 54. b4 Rxh2 55. bxa5 Rxc2+ 0-1
+
+
+[Event "Live Chess"]
+[Date "2026.10.01"]
+[White "nourddin_1"]
+[Black "huhsaaan"]
+[Result "0-1"]
+[ECO "D00"]
+[ECOUrl "https://www.chess.com/openings/Queens-Pawn-Opening-Levitsky-Attack-2...f6-3.Bf4-Nc6"]
+[WhiteElo "130"]
+[BlackElo "186"]
+[TimeControl "600"]
+[Termination "huhsaaan won by resignation"]
+[Link "https://www.chess.com/game/live/184656073488"]
+
+1. d4 d5 2. Bg5 Nc6 3. Bf4 f6 4. Be3 e5 5. Nf3 Nh6 6. Rg1 b5 7. Bd2 f5 8. Nxe5 Ne7 9. Nd3 Ng6 10. f3 Bd6 11. g4 Bxh2 12. Rh1 Bg3+ 0-1
+
+
+[Event "Live Chess"]
+[Date "2026.10.01"]
+[White "Nahomxo"]
+[Black "huhsaaan"]
+[Result "1-0"]
+[ECO "A00"]
+[ECOUrl "https://www.chess.com/openings/Van-t-Kruijs-Opening-1...d5"]
+[WhiteElo "206"]
+[BlackElo "166"]
+[TimeControl "600"]
+[Termination "Nahomxo won by resignation"]
+[Link "https://www.chess.com/game/live/184657150330"]
+
+1. e3 d5 2. Qf3 e6 3. c4 f5 4. cxd5 exd5 5. Nc3 Be6 6. Qf4 Nc6 7. Nb5 Nh6 8. Nxc7+ Qxc7 9. Qxc7 Rd8 10. Qxb7 Rd7 11. Qxc6 Bd6 12. Qa8+ Ke7 13. Qxh8 Rd8 14. Qxh7 Ng8 15. Qxg7+ Ke8 16. Qxa7 1-0
+
+
+[Event "Live Chess"]
+[Date "2026.10.02"]
+[White "huhsaaan"]
+[Black "joecur032376"]
+[Result "1-0"]
+[ECO "A40"]
+[ECOUrl "https://www.chess.com/openings/Queens-Pawn-Opening-Mikenas-Defense"]
+[WhiteElo "197"]
+[BlackElo "172"]
+[TimeControl "600"]
+[Termination "huhsaaan won on time"]
+[Link "https://www.chess.com/game/live/184716420918"]
+
+1. d4 Nc6 2. Bf4 e6 3. e3 Bb4+ 4. c3 Be7 5. Nf3 h6 6. Bd3 g5 7. Nbd2 gxf4 8. exf4 Bd6 9. O-O b6 10. g3 Na5 11. b4 Bb7 12. bxa5 Bxf3 13. Qxf3 Rb8 14. axb6 Rxb6 15. a4 Rb2 16. Bc4 Rxd2 17. Qe3 Rb2 18. Bxe6 dxe6 19. c4 Rb4 20. Qc3 Rb6 21. a5 Rc6 22. d5 exd5 23. Rfe1+ Kd7 24. Qxh8 Rxc4 25. Qg7 Qb8 26. Qxg8 Qxg8 27. h4 Rc5 28. a6 Qb8 29. g4 Qb4 30. Ra2 Ra5 31. Rc2 Qxe1+ 32. Kg2 Bxf4 33. g5 hxg5 34. hxg5 Bxg5 35. Kg3 Rxa6 36. Rc5 Ra3+ 37. Kg2 d4 38. Rxg5 Qd2 39. Rg8 c5 40. Rf8 c4 41. Rxf7+ Kd6 42. Rf6+ Ke5 43. Rc6 c3 44. Rxc3 Qxc3 45. Kh2 d3 46. Kg2 d2 47. Kh2 d1=Q 48. Kg2 Ra4 49. Kh2 Rh4+ 50. Kg2 Ke4 51. f3+ Ke3 52. Kg3 Qh8 53. Kg2 Qd7 54. Kf1 Qd1+ 55. Kg2 1-0
+
+
+[Event "Live Chess"]
+[Date "2026.10.02"]
+[White "ElioCameron"]
+[Black "huhsaaan"]
+[Result "0-1"]
+[ECO "C50"]
+[ECOUrl "https://www.chess.com/openings/Giuoco-Piano-Game-Four-Knights-Game"]
+[WhiteElo "226"]
+[BlackElo "239"]
+[TimeControl "600"]
+[Termination "huhsaaan won on time"]
+[Link "https://www.chess.com/game/live/184722587510"]
+
+1. e4 e5 2. Bc4 Bc5 3. Nc3 Nc6 4. Nf3 Nf6 5. d4 Bxd4 6. Nb5 a6 7. Na3 b5 8. Bd5 Nxd5 9. exd5 Ne7 10. Qe2 f6 11. c4 c6 12. cxb5 cxb5 13. O-O O-O 14. Nb1 Nxd5 15. Qe4 Bb7 16. Bd2 g6 17. Na3 f5 18. Qh4 g5 19. Qxg5+ Qxg5 20. Nxg5 h6 21. Nh3 Rac8 22. Bxh6 Rf6 23. Bg5 Rg6 24. Nc2 Bxb2 25. Nb4 Bxa1 26. Nxd5 Bxd5 27. Rxa1 Rc3 28. Rd1 Bxa2 29. Rxd7 Be6 30. Rd8+ Kf7 31. Bd2 Rxh3 32. Kh1 Ke7 33. Ra8 Bd5 34. Bb4+ Ke6 35. Re8+ Kf7 36. Rd8 Rxg2 37. Rxd5 Rxf2 38. Rd7+ Ke8 39. Rg7 Rf1+ 40. Kg2 Rh4 41. Kxf1 Rxb4 42. Rg8+ Ke7 43. Rg7+ Kd6 44. Rg6+ Kd5 0-1
+
+
+[Event "Live Chess"]
+[Date "2026.10.03"]
+[White "huhsaaan"]
+[Black "SardorM23"]
+[Result "1-0"]
+[ECO "A40"]
+[ECOUrl "https://www.chess.com/openings/Queens-Pawn-Opening-Horwitz-Defense-2.Bf4"]
+[WhiteElo "253"]
+[BlackElo "196"]
+[TimeControl "600"]
+[Termination "huhsaaan won - game abandoned"]
+[Link "https://www.chess.com/game/live/184765475514"]
+
+1. d4 e6 2. Bf4 Qf6 3. e3 c5 4. Nf3 cxd4 5. c3 dxc3 6. Bd3 cxb2 7. Qc2 bxa1=Q 8. Qxc8+ Ke7 9. O-O e5 10. Bxe5 Qc6 11. Qxb8 Rxb8 12. Bxa1 1-0
+
+
+[Event "Live Chess"]
+[Date "2026.10.03"]
+[White "mert19890"]
+[Black "huhsaaan"]
+[Result "1-0"]
+[ECO "C20"]
+[ECOUrl "https://www.chess.com/openings/Kings-Pawn-Opening-1...e5"]
+[WhiteElo "247"]
+[BlackElo "239"]
+[TimeControl "600"]
+[Termination "mert19890 won by checkmate"]
+[Link "https://www.chess.com/game/live/184762250112"]
+
+1. e4 e5 2. Bb5 Nf6 3. f3 a6 4. Bc4 b5 5. Bd5 c6 6. Bb3 d5 7. exd5 cxd5 8. a4 bxa4 9. Bxa4+ Nbd7 10. Bxd7+ Nxd7 11. Ne2 a5 12. O-O Nb6 13. Nbc3 Bc5+ 14. d4 exd4 15. Nxd4 Bxd4+ 16. Qxd4 Be6 17. Qxg7 d4 18. Ne4 Bc4 19. Re1 Qh4 20. Rd1 Nd5 21. Qxh8+ Ke7 22. Qxa8 Ne3 23. Qa7+ Ke6 24. Nc5+ Kd6 25. Ne4+ Kc6 26. Re1 Nxc2 27. Qa6+ Kd5 28. Qxa5+ Ke6 29. Nc5+ Kf6 30. Qd8+ Kg7 31. Qxh4 Nxe1 32. Qg3+ Kf6 33. Ra6+ Bxa6 34. Bg5+ Kf5 35. Qf4+ Kg6 36. Qf6+ Kh5 37. Qh6# 1-0
+
+
+[Event "Live Chess"]
+[Date "2026.10.02"]
+[White "YossufM"]
+[Black "huhsaaan"]
+[Result "0-1"]
+[ECO "D00"]
+[ECOUrl "https://www.chess.com/openings/Queens-Pawn-Opening-Levitsky-Attack-2...h6"]
+[WhiteElo "518"]
+[BlackElo "222"]
+[TimeControl "600"]
+[Termination "huhsaaan won by resignation"]
+[Link "https://www.chess.com/game/live/184721547702"]
+
+1. d4 d5 2. Bg5 h6 3. Bf4 Nc6 4. e3 g5 5. g3 h5 6. Bxg5 f6 7. Bf4 Nh6 8. Nf3 Nf5 9. Nc3 e5 10. dxe5 fxe5 11. Nxd5 Be6 12. Nf6+ Qxf6 13. Nxe5 Nxe5 14. Bxe5 Qxe5 15. Qd3 Bb4+ 16. c3 Ba5 17. Qc4 Bxc4 18. Bxc4 Rf8 0-1
+
+
+[Event "Live Chess"]
+[Date "2026.10.02"]
+[White "huhsaaan"]
+[Black "YossufM"]
+[Result "0-1"]
+[ECO "D00"]
+[ECOUrl "https://www.chess.com/openings/Queens-Pawn-Opening-Accelerated-London-System"]
+[WhiteElo "193"]
+[BlackElo "575"]
+[TimeControl "600"]
+[Termination "YossufM won by resignation"]
+[Link "https://www.chess.com/game/live/184721515314"]
+
+1. d4 d5 2. Bf4 Bg4 3. e3 Bxd1 0-1
+
+
+[Event "Live Chess"]
+[Date "2026.10.02"]
+[White "Anas-rd1"]
+[Black "huhsaaan"]
+[Result "0-1"]
+[ECO "A00"]
+[ECOUrl "https://www.chess.com/openings/Van-t-Kruijs-Opening-1...d5"]
+[WhiteElo "158"]
+[BlackElo "179"]
+[TimeControl "600"]
+[Termination "huhsaaan won - game abandoned"]
+[Link "https://www.chess.com/game/live/184715225908"]
+
+1. e3 d5 2. Nc3 Nf6 3. f3 g5 4. Nh3 Bh6 5. Rg1 O-O 6. a4 Nc6 7. Nb5 Qd7 8. Nf2 a6 9. Nc3 b5 10. axb5 axb5 11. Nxb5 Rxa1 12. Nc3 Na5 13. b4 Nc6 14. Bb5 Rb1 15. Bxc6 Qxc6 16. b5 Qd6 17. h3 Bb7 18. e4 dxe4 19. fxe4 Qe5 20. Ng4 Qe6 21. Nxh6+ Kh8 22. Nxb1 Qxe4+ 23. Kf1 Qf4+ 24. Ke1 Qh4+ 25. Kf1 Qxh6 26. Rh1 c6 27. b6 Ba6+ 28. Kg1 Rb8 29. Qe1 Ng8 30. Nc3 Rxb6 31. Na4 Rb4 32. Nc5 Qd6 33. Bb2+ Rxb2 34. Nxa6 Qc5+ 35. Nxc5 Rxc2 36. Qe5+ f6 37. Qe2 Rxc5 38. h4 gxh4 39. Rxh4 e5 40. Qf2 Rc1+ 41. Kh2 Rd1 42. Qe2 Rc1 0-1
+
+
+[Event "Live Chess"]
+[Date "2026.10.03"]
+[White "huhsaaan"]
+[Black "YossufM"]
+[Result "1-0"]
+[ECO "A40"]
+[ECOUrl "https://www.chess.com/openings/Englund-Gambit"]
+[WhiteElo "274"]
+[BlackElo "445"]
+[TimeControl "600"]
+[Termination "huhsaaan won by resignation"]
+[Link "https://www.chess.com/game/live/184778582432"]
+
+1. d4 e5 2. Nf3 c6 3. e3 Qa5+ 4. c3 g6 5. b4 Qb6 6. dxe5 Be7 7. e4 Nh6 8. Bf4 Na6 9. Nbd2 d6 10. h3 Bh4 11. Bd3 Be7 12. O-O c5 13. bxc5 dxc5 14. Bxh6 Nc7 15. Be3 Be6 16. c4 Qb2 17. Rc1 Qxe5 18. Nxe5 b6 19. a4 f6 20. Ng4 Rb8 21. e5 Rd8 22. exf6 Rxd3 23. Qe2 Ra3 24. fxe7 Rxa4 25. Nf6+ Kxe7 26. Bg5 h6 27. Qg4 hxg5 28. Qxg5 Ra2 29. Nb3 Bxc4 30. Qe5+ Kf7 31. Rxc4 Ra6 32. Qxc7+ Kxf6 33. Rf4+ Kg5 34. g3 Rxh3 35. Qe7+ Kh6 36. Rh4+ Rxh4 37. gxh4 Ra3 38. Nd2 Rg3+ 39. Kh2 Rf3 40. Nxf3 1-0
+
+
+[Event "Live Chess"]
+[Date "2026.10.05"]
+[White "19293a"]
+[Black "huhsaaan"]
+[Result "0-1"]
+[ECO "A00"]
+[ECOUrl "https://www.chess.com/openings/Van-Geet-Opening-Reversed-Nimzowitsch-Variation"]
+[WhiteElo "229"]
+[BlackElo "287"]
+[TimeControl "600"]
+[Termination "huhsaaan won by resignation"]
+[Link "https://www.chess.com/game/live/184861501672"]
+
+1. Nc3 e5 2. d3 Nc6 3. Bd2 d6 4. Qc1 Be6 5. Bg5 f6 6. Bh4 d5 7. Nb5 a6 8. Bxf6 gxf6 9. Nd6+ cxd6 10. e3 d4 11. e4 f5 12. Be2 fxe4 13. Bh5+ Ke7 14. Qg5+ Nf6 15. g4 Rg8 16. Qh6 Bxh6 17. Nh3 0-1
+
+
+[Event "Live Chess"]
+[Date "2026.10.05"]
+[White "huhsaaan"]
+[Black "whole_cooked_chicken"]
+[Result "0-1"]
+[ECO "D00"]
+[ECOUrl "https://www.chess.com/openings/Queens-Pawn-Opening-Accelerated-London-System"]
+[WhiteElo "274"]
+[BlackElo "315"]
+[TimeControl "600"]
+[Termination "whole_cooked_chicken won by checkmate"]
+[Link "https://www.chess.com/game/live/184862419860"]
+
+1. d4 d5 2. Bf4 Nc6 3. e3 e5 4. Nf3 f6 5. c3 Bd6 6. Bd3 exf4 7. Nbd2 fxe3 8. fxe3 f5 9. Rf1 f4 10. exf4 Bxf4 11. Nb3 Nf6 12. g3 Bd6 13. Qe2+ Ne7 14. Bb5+ Bd7 15. a4 Bxb5 16. axb5 Ne4 17. Qxe4 dxe4 18. Nfd2 e3 19. Nf3 c6 20. bxc6 bxc6 21. Na5 Qxa5 22. Rxa5 Nf5 23. Rxf5 Rf8 24. Rg5 Be7 25. Rxg7 Bf6 26. Rxh7 Rh8 27. Rxh8+ Bxh8 28. h4 Rb8 29. h5 Rxb2 30. Ng5 a5 31. Ne6 a4 32. Rf3 a3 33. Rxe3 a2 34. Nc7+ Kd7 35. h6 a1=Q# 0-1

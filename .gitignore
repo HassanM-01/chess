@@ -1,0 +1,16 @@
+node_modules
+dist
+.vercel
+.env
+.env.*
+!.env.example
+*.local
+playwright-report
+test-results
+coverage
+public/engine/*
+!public/engine/.gitkeep
+.DS_Store
+*.tsbuildinfo
+dev-dist
+blunder-check-starter.zip

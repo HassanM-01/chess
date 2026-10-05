@@ -5,7 +5,8 @@ import type { ThemeKey } from '@/db/types';
 export type LessonPractice =
   | { kind: 'puzzles'; theme: ThemeKey; n: number; label: string }
   | { kind: 'opening'; set: OpeningKey; /** -1 = cycle through every line */ line: number; label: string }
-  | { kind: 'play'; label: string; /** custom start position (e.g. K+Q vs K) */ fen?: string };
+  | { kind: 'play'; label: string; /** custom start position (e.g. K+Q vs K) */ fen?: string }
+  | { kind: 'route'; label: string; /** an in-app page */ to: string };
 
 export interface Lesson {
   id: string;
@@ -204,9 +205,9 @@ export const LESSONS: Lesson[] = [
       "When the king is stuck on the edge, bring your own king close, then deliver mate with the queen next to the enemy king, protected by your king."
     ],
     "practice": {
-      "kind": "play",
-      "fen": "8/8/8/4k3/8/8/8/3QK3 w - - 0 1",
-      "label": "Checkmate the lone king"
+      "kind": "route",
+      "to": "/learn/mate/practice/kq",
+      "label": "Practice with a plan and a coach"
     }
   }
 ] as Lesson[];

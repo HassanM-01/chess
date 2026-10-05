@@ -15,6 +15,7 @@ import { engine, evalPos } from '@/state/engine';
 import { toast } from '@/state/toast';
 import { pieceHint, positionHint } from './hints';
 import { SessionDebrief } from '@/coach/SessionDebrief';
+import { MateWhy } from '@/mate/MateWhy';
 import { useSessionStore, type SessionCursor } from './sessionStore';
 import type { SessionItem, SessionOptions } from './types';
 import { useRecordAnswer } from './useRecord';
@@ -410,6 +411,7 @@ function Runner(): JSX.Element {
           {s.fb.note && <p className="small muted">{s.fb.note}</p>}
         </div>
       )}
+      {(s.solved || s.revealed) && it.kind === 'puz' && (it.puzzle.themes[0] === 'mate1' || it.puzzle.themes[0] === 'mate2') && <MateWhy key={it.id} fen={it.puzzle.fen} moves={it.puzzle.moves} side={me} />}
       <div className={`row actions${s.pulse ? ' pulse' : ''}`} key={`bar-${s.pulse}`} data-testid="actions">
         {s.solved ? (
           <>

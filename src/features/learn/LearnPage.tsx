@@ -14,6 +14,13 @@ export function LearnPage(): JSX.Element {
   return (
     <div className="stack">
       <Hero eyebrow="Learn" title="A path from zero, in the order that wins games." />
+      <Link to="/learn/mate" className="card stack-s" style={{ textDecoration: 'none', color: 'inherit' }} data-testid="mate-school-link">
+        <div className="spread">
+          <h3>Checkmate school</h3>
+          <Pill tone="acc">New</Pill>
+        </div>
+        <p className="small muted">Stop chasing the king. Learn the plan for K+Q, K+R and two rooks, and the classic patterns, with every escape square explained.</p>
+      </Link>
       <div className="stack-s">
         <div className="spread">
           <h2>Lessons</h2>

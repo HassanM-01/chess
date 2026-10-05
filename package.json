@@ -16,7 +16,8 @@
     "predev": "node scripts/copy-engine.mjs",
     "prebuild": "node scripts/copy-engine.mjs",
     "postinstall": "node scripts/copy-engine.mjs",
-    "pretest": "node scripts/copy-engine.mjs"
+    "pretest": "node scripts/copy-engine.mjs",
+    "dev:local": "node scripts/dev-local.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.117.2",

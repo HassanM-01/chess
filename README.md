@@ -43,6 +43,7 @@ Node 22+ is required (`stockfish@18.0.8` is pinned on purpose: the spec's result
 | Command | What it does |
 |---|---|
 | `npm run dev` / `build` / `preview` | Vite dev server / production build (with PWA) / preview on :4173 |
+| `npm run dev:local` | Dev server on :5174 in local mode (ignores the Supabase keys in `.env.local`, mock AI coach on) |
 | `npm run typecheck` | `tsc --noEmit` (strict) |
 | `npm test` | Vitest: unit tests that run the real Stockfish in Node |
 | `npm run e2e` | Playwright on the iPhone 13 profile (390x844) + the PWA spec |
@@ -103,6 +104,19 @@ repetition. Sessions serve personal puzzles first (about 70% of a set) and fill 
 
 Needs `supabase/migrations/0004_personal_puzzles.sql` (adds the `variant` and `generated` training kinds). Without it
 everything else keeps working; only these extras are skipped.
+
+## Checkmate school
+
+Learn → Checkmate school (`src/mate/`). It teaches the *plan* for mating, not just the shapes.
+
+- **Technique trainer** (K+Q, K+R, two rooks vs K): you play White against the engine's best defence. A plan card names
+  the stage you are in (centre, edge, close in) and what to do. A yellow **cage** shows every square the black king can
+  still reach; each move is graded by what it did to the cage (shrank, brought the king closer, loosened, hung a piece,
+  stalemate). Hints point at the piece, then at the move and say what it does to the cage. Undo is always available.
+- **Patterns** (back-rank, ladder, queen kiss, Anastasia, Arabian, smothered, Scholar's, fool's): watch step by step or
+  play them yourself with the reason for each move.
+- **Why it is mate**: every finished mate, and every solved mate-in-1/2 puzzle ("See how the mate works"), marks the
+  king's escape squares and explains why each one is covered or blocked (`src/mate/anatomy.ts`).
 
 ## The AI coach
 

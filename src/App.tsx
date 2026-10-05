@@ -21,6 +21,9 @@ const LearnPage = lazy(() => import('@/features/learn/LearnPage').then((m) => ({
 const LessonPage = lazy(() => import('@/features/learn/LessonPage').then((m) => ({ default: m.LessonPage })));
 const OpeningPage = lazy(() => import('@/features/learn/OpeningPage').then((m) => ({ default: m.OpeningPage })));
 const ChatPage = lazy(() => import('@/coach/ChatPage').then((m) => ({ default: m.ChatPage })));
+const MateSchoolPage = lazy(() => import('@/mate/MateSchoolPage').then((m) => ({ default: m.MateSchoolPage })));
+const PatternPage = lazy(() => import('@/mate/PatternPage').then((m) => ({ default: m.PatternPage })));
+const PracticePage = lazy(() => import('@/mate/PracticePage').then((m) => ({ default: m.PracticePage })));
 const LondonPage = lazy(() => import('@/features/london/LondonPage').then((m) => ({ default: m.LondonPage })));
 const PlayPage = lazy(() => import('@/features/play/PlayPage').then((m) => ({ default: m.PlayPage })));
 const SettingsPage = lazy(() => import('@/features/settings/SettingsPage').then((m) => ({ default: m.SettingsPage })));
@@ -100,6 +103,9 @@ export function App(): JSX.Element {
                     <Route path="train/session" element={<SessionPage />} />
                     <Route path="learn" element={<LearnPage />} />
                     <Route path="learn/lesson/:id" element={<LessonPage />} />
+                    <Route path="learn/mate" element={<MateSchoolPage />} />
+                    <Route path="learn/mate/pattern/:id" element={<PatternPage />} />
+                    <Route path="learn/mate/practice/:kind" element={<PracticePage />} />
                     <Route path="learn/opening/:set" element={<OpeningPage />} />
                     <Route path="learn/opening/:set/:line" element={<OpeningPage />} />
                     <Route path="london" element={<LondonPage />} />

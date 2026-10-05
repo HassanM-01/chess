@@ -30,6 +30,9 @@ export function LessonPage(): JSX.Element {
     } else if (pr.kind === 'opening') {
       void markDone();
       nav(`/learn/opening/${pr.set}/${pr.line < 0 ? 0 : pr.line}${pr.line < 0 ? '?cycle=1' : ''}`);
+    } else if (pr.kind === 'route') {
+      void markDone();
+      nav(pr.to);
     } else {
       void markDone();
       nav(pr.fen ? `/play?fen=${encodeURIComponent(pr.fen)}` : '/play?check=1');

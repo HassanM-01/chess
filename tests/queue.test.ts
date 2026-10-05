@@ -1,5 +1,6 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import { AnalysisQueue } from '@/analysis/queue';
+import { evaluateGame } from '@/analysis/analyzeGame';
 import { createMemoryRepo } from '@/db/memoryRepo';
 import { makeEvaluator } from '@/engine/evalPos';
 import { parsePgnText } from '@/chesscom/parsePgn';
@@ -65,6 +66,17 @@ describe('analysis queue + persistence (memory repo, real engine)', () => {
     const q = new AnalysisQueue(repo, evalPos);
     expect(await q.run()).toBe(1);
     expect((await repo.listGames())[0].analysisStatus).toBe('done');
+  });
+
+  it('results do not depend on what the engine analyzed before (hash is cleared per game)', async () => {
+    const a = pick('YossufM', '2026-10-01').find((g) => g.white === 'huhsaaan')!;
+    const b = pick('Nahomxo', '2026-10-01')[0];
+    const fresh = await evaluateGame(a, makeEvaluator(createNodeEngine()));
+    const warm = createNodeEngine();
+    const warmEval = makeEvaluator(warm);
+    await evaluateGame(b, warmEval);
+    const after = await evaluateGame(a, warmEval);
+    expect(after).toEqual(fresh);
   });
 
   it('skipped and errored games are not re-analyzed', async () => {

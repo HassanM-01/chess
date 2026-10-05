@@ -30,7 +30,8 @@ export async function evaluateGame(
   const out: StoredEval[] = [];
   for (let i = 0; i < fens.length; i++) {
     if (shouldCancel?.()) throw new Error('analysis cancelled');
-    const r = await evalPos(fens[i], ANALYSIS_DEPTH, 'background');
+    // A fresh hash table at the start of every game keeps results reproducible whatever was analyzed before.
+    const r = await evalPos(fens[i], ANALYSIS_DEPTH, 'background', { newGame: i === 0 });
     out.push(toStored(r));
     onProgress?.((i + 1) / fens.length);
   }

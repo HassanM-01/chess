@@ -26,6 +26,8 @@ export interface RunOptions {
   multipv?: number;
   /** interactive requests (bot moves, hints, Blunder Check) always jump ahead of background analysis */
   priority?: EnginePriority;
+  /** clear the hash table first (UCI ucinewgame): analysis does this per game so results do not depend on what ran before */
+  newGame?: boolean;
 }
 
 export type EngineStatus = 'idle' | 'loading' | 'ready' | 'failed';

@@ -1,0 +1,54 @@
+/* Additions on top of the ported prototype stylesheet (app.css). */
+html{-webkit-text-size-adjust:100%}
+body{margin:0;min-height:100dvh;overscroll-behavior-y:none}
+#root{min-height:100dvh}
+a{color:var(--accent)}
+.who{text-decoration:none}
+
+/* Board: pieces can be dragged, so the board itself must not scroll the page */
+.board{touch-action:none}
+.sq svg.pc.ghost{filter:drop-shadow(0 4px 6px rgba(0,0,0,.35))}
+.sq.sel::before{z-index:0}
+
+/* Forms */
+input[type=email],input[type=password],input[type=number],input[type=search]{width:100%;font:inherit;font-size:16px;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+input:focus-visible,textarea:focus-visible,select:focus-visible{outline:3px solid var(--warn);outline-offset:1px}
+.err{color:var(--bad);font-weight:700;font-size:14px}
+
+/* App chrome */
+.login{padding-bottom:40px}
+.banner{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:4px 0 8px;padding:10px 14px;border-radius:12px;background:var(--accent-soft);color:var(--accent);font-weight:700;text-decoration:none}
+.banner .muted{color:var(--accent);opacity:.8;font-weight:400;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:50%}
+.splash{display:grid;place-items:center;gap:12px;min-height:60dvh;text-align:center}
+.spinner{width:32px;height:32px;border-radius:50%;border:4px solid var(--surface2);border-top-color:var(--accent);animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.credits{display:flex;flex-direction:column;gap:10px;padding-left:18px;margin:0}
+button.sq-clear{all:unset}
+.row.end{justify-content:flex-end}
+.grow{flex:1}
+.pill.btnish{cursor:pointer}
+.nowrap{white-space:nowrap}
+.ellipsis{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.big-btn{min-height:56px;font-size:18px}
+.sticky-bar{position:sticky;bottom:0;z-index:15;background:var(--bg);padding-block:10px calc(10px + env(safe-area-inset-bottom,0px));margin-bottom:calc(-1 * env(safe-area-inset-bottom,0px))}
+.sticky-bar .btn{min-height:48px}
+.sticky-bar.row{display:flex;gap:8px}
+.sticky-bar .btn.primary{flex:1}
+.trend-up{color:var(--bad)}
+.trend-down{color:var(--good)}
+.kv{display:flex;justify-content:space-between;gap:12px}
+.lead-art{display:block;margin:0 auto}
+details.card summary{list-style:none}
+.hint-clue{border-left:4px solid var(--warn)}
+.session-meta{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.session-meta .progress{flex:1}
+.eval-label{font-size:12px;color:var(--ink2);font-variant-numeric:tabular-nums}
+
+a.tab{text-decoration:none}
+.stat b{white-space:nowrap;font-size:22px}
+.stat span{display:block;line-height:1.25;margin-top:2px}
+.trend-list{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px}
+.moves .mn{margin-left:4px}
+.back{text-decoration:none}
+.lchips .lchip{white-space:nowrap}
+.play-title{font-size:22px}

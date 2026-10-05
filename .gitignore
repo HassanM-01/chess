@@ -14,3 +14,4 @@ public/engine/*
 *.tsbuildinfo
 dev-dist
 blunder-check-starter.zip
+e2e/.auth

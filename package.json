@@ -11,8 +11,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "e2e": "playwright test",
-    "seed:puzzles": "tsx scripts/seed-puzzles.ts",
-    "seed:lichess": "tsx scripts/import-lichess-puzzles.ts",
+    "seed:puzzles": "tsx --env-file-if-exists=.env.local scripts/seed-puzzles.ts",
+    "seed:lichess": "tsx --env-file-if-exists=.env.local scripts/import-lichess-puzzles.ts",
     "predev": "node scripts/copy-engine.mjs",
     "prebuild": "node scripts/copy-engine.mjs",
     "postinstall": "node scripts/copy-engine.mjs",
@@ -40,6 +40,8 @@
     "typescript": "^7.0.2",
     "vite": "^8.3.2",
     "vite-plugin-pwa": "^2.0.0",
-    "vitest": "^5.0.3"
+    "vitest": "^5.0.3",
+    "workbox-build": "^7.4.1",
+    "workbox-window": "^7.4.1"
   }
 }

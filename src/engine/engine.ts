@@ -29,6 +29,7 @@ interface Job {
   skill: number;
   multipv: number;
   priority: EnginePriority;
+  newGame: boolean;
   res: (e: PosEval) => void;
   rej: (err: unknown) => void;
   aborted?: boolean;
@@ -140,7 +141,7 @@ export class Engine {
   run(fen: string, o: RunOptions = {}): Promise<PosEval> {
     const priority = o.priority ?? 'interactive';
     return new Promise<PosEval>((res, rej) => {
-      const job: Job = { fen, depth: o.depth ?? 10, skill: o.skill ?? 20, multipv: o.multipv ?? 1, priority, res, rej };
+      const job: Job = { fen, depth: o.depth ?? 10, skill: o.skill ?? 20, multipv: o.multipv ?? 1, priority, newGame: !!o.newGame, res, rej };
       if (priority === 'interactive') {
         this.hi.push(job);
         // Interrupt a running background search so the tap feels instant.
@@ -240,6 +241,7 @@ export class Engine {
           });
         }
       };
+      if (job.newGame) tr.send('ucinewgame');
       tr.send(`position fen ${job.fen}`);
       tr.send(`go depth ${job.depth}`);
     });

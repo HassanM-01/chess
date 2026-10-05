@@ -100,6 +100,9 @@ Node 22+ is required (`stockfish@18.0.8` is pinned on purpose: the spec's result
 
 - `stockfish` is pinned to **18.0.8** (npm's latest is 19) so results match the prototype and the spec's acceptance numbers.
   The engine files are copied into `public/engine/` by `scripts/copy-engine.mjs` rather than committed.
+- `profiles.chesscom_username` is **not unique** (the spec makes it unique). Otherwise anyone could link someone else's chess.com
+  name and lock the real owner out of the app.
+- Spaced repetition: when a pool is small, items that are not due yet are still served so a session never comes up empty.
 - `puzzles` has two extra nullable columns, `last_move` and `alts`, because the puzzle runner needs the opponent's last move
   and alternative mates.
 - Phase 3 acceptance for the YossufM game: the **walkthrough** marks plies 76, 78, 82, 84 red (win-chance drop of 20+ points),

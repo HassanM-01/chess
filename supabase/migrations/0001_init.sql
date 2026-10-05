@@ -14,7 +14,9 @@ create table public.profiles (
   last_synced_at timestamptz,
   created_at timestamptz not null default now()
 );
-create unique index profiles_chesscom_username_key on public.profiles (chesscom_username) where chesscom_username is not null;
+-- Deliberately NOT unique (deviation from the spec): anyone could otherwise claim someone else's chess.com name and lock the
+-- real owner out, and one person signing in two ways would collide with themselves.
+create index profiles_chesscom_username_idx on public.profiles (chesscom_username) where chesscom_username is not null;
 
 -- GAMES ----------------------------------------------------------------
 create type game_source as enum ('chesscom','pgn','bot','london');

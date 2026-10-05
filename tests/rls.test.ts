@@ -74,11 +74,12 @@ describe.skipIf(!hasSupabase)('Row Level Security', () => {
     expect(t.error).not.toBeNull();
   });
 
-  it('a chess.com username can be linked to only one account', async () => {
+  it('a chess.com username may be linked by more than one account (deliberately not unique)', async () => {
     const name = `rls${Date.now()}`;
     expect((await a.client.from('profiles').update({ chesscom_username: name }).eq('id', a.id).select('id')).error).toBeNull();
-    const clash = await b.client.from('profiles').update({ chesscom_username: name.toUpperCase() }).eq('id', b.id).select('id');
-    expect(clash.error?.code).toBe('23505');
+    const second = await b.client.from('profiles').update({ chesscom_username: name.toUpperCase() }).eq('id', b.id).select('chesscom_username').single();
+    expect(second.error).toBeNull();
+    expect(second.data?.chesscom_username).toBe(name); // lowercased by the trigger
   });
 
   it('public sharing: only games flagged is_public are readable signed out, read-only', async () => {

@@ -48,7 +48,7 @@ export async function saveBotGame(repo: Repo, g: BotGameInput): Promise<GameRow>
       userColor: g.userColor,
       result: g.result,
       outcome: outcomeFor(g.result, g.userColor),
-      termination: c.isCheckmate() ? 'checkmate' : 'draw',
+      termination: c.isCheckmate() ? 'checkmate' : g.result === '1/2-1/2' ? 'draw' : 'resignation',
       timeClass: null,
       opening: g.opening ?? null,
       eco: null,

@@ -8,6 +8,7 @@ import { createMemoryRepo } from '@/db/memoryRepo';
 import type { Repo } from '@/db/repo';
 import { createSupabaseRepo } from '@/db/supabaseRepo';
 import { getSupabase, isSupabaseConfigured } from '@/lib/supabase';
+import { resetUserStores } from './resetStores';
 
 export type AuthStatus = 'loading' | 'signedOut' | 'signedIn';
 
@@ -60,11 +61,15 @@ export function AuthProvider({ children }: { children: ReactNode }): JSX.Element
       setSession(data.session);
       setStatus(data.session ? 'signedIn' : 'signedOut');
     });
+    let lastUser: string | null = null;
     const { data: sub } = sb.auth.onAuthStateChange((_evt, s) => {
-      setSession((prev) => {
-        if (prev?.user.id !== s?.user.id) qc.clear(); // never show another user's cached data
-        return s;
-      });
+      const uid = s?.user.id ?? null;
+      if (lastUser !== null && lastUser !== uid) {
+        resetUserStores(); // never show another user's cached data or in-progress games
+        qc.clear();
+      }
+      lastUser = uid ?? lastUser;
+      setSession(s);
       setStatus(s ? 'signedIn' : 'signedOut');
     });
     return () => {
@@ -89,6 +94,7 @@ export function AuthProvider({ children }: { children: ReactNode }): JSX.Element
   }, []);
   const signOut = useCallback(async () => {
     if (mode === 'supabase') await getSupabase().auth.signOut();
+    resetUserStores();
     qc.clear();
   }, [mode, qc]);
   const deleteAccount = useCallback(async () => {
@@ -106,6 +112,7 @@ export function AuthProvider({ children }: { children: ReactNode }): JSX.Element
     const res = await fetch('/api/delete-account', { method: 'POST', headers: { Authorization: `Bearer ${data.session?.access_token ?? ''}` } });
     if (!res.ok) throw new Error('Could not delete the account. Try again later.');
     await sb.auth.signOut();
+    resetUserStores();
     qc.clear();
   }, [mode, qc]);
 

@@ -65,11 +65,14 @@ export class AnalysisQueue {
     this.cancelled = false;
     this._state = { ...IDLE };
     await this.repo.resetRunningGames();
+    // Games that failed before get another go (e.g. the engine was unavailable); a persistent failure just errors again.
+    for (const g of await this.repo.listGames()) if (g.analysisStatus === 'error') await this.repo.setGameStatus(g.id, 'pending');
     let analyzed = 0;
+    const tried = new Set<string>(); // each game gets one attempt per run, so failing repo writes cannot make this loop spin
     // Re-read the pending list after each batch so games added mid-run (a second "Pull") are picked up.
     for (;;) {
       const pending = (await this.repo.listGames())
-        .filter((g) => g.analysisStatus === 'pending')
+        .filter((g) => g.analysisStatus === 'pending' && !tried.has(g.id))
         .sort((a, b) => (b.playedAt ?? b.createdAt).localeCompare(a.playedAt ?? a.createdAt));
       if (!pending.length || this.cancelled) break;
       const base = this._state.running ? this._state.done : 0;
@@ -77,6 +80,7 @@ export class AnalysisQueue {
       for (let i = 0; i < pending.length; i++) {
         if (this.cancelled) break;
         const g = pending[i];
+        tried.add(g.id);
         this.set({ label: `vs ${opponentName(g)}` });
         try {
           await this.analyzeOne(g, (f) => {
@@ -102,8 +106,25 @@ export class AnalysisQueue {
 
   /** Analyze a single game and persist everything (analysis, mistakes, training items). */
   async analyzeOne(g: GameRow, onProgress?: (fraction: number) => void): Promise<void> {
+    // The same game must never be analyzed twice at once (queue + an opened walkthrough): share the in-flight run.
+    const hit = this.inflight.get(g.id);
+    if (hit) return hit;
+    const run = this.analyzeOneInner(g, onProgress).finally(() => this.inflight.delete(g.id));
+    this.inflight.set(g.id, run);
+    return run;
+  }
+
+  private inflight = new Map<string, Promise<void>>();
+
+  private async analyzeOneInner(g: GameRow, onProgress?: (fraction: number) => void): Promise<void> {
     await this.repo.setGameStatus(g.id, 'running');
-    const evals = await evaluateGame(g, this.evalPos, onProgress, () => this.cancelled);
+    let evals;
+    try {
+      evals = await evaluateGame(g, this.evalPos, onProgress, () => this.cancelled);
+    } catch (e) {
+      await this.repo.setGameStatus(g.id, 'pending').catch(() => undefined);
+      throw e;
+    }
     const { mistakes, summary } = analyzeFromEvals(g, evals);
     const trainingItems = generateTrainingItems(g, evals, mistakes, { gameId: g.id, opponent: opponentName(g) });
     await this.repo.saveAnalysis({ gameId: g.id, engine: ENGINE_TAG, depth: ANALYSIS_DEPTH, evals, summary, mistakes, trainingItems });

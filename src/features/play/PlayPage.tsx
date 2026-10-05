@@ -161,7 +161,7 @@ export function PlayPage(): JSX.Element {
       seq.current++;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fen, game?.over, game?.level, game?.me, gate]);
+  }, [fen, game?.id, game?.over, game?.level, game?.me, gate]);
 
   const onMove = useCallback(
     async (u: Uci): Promise<void> => {
@@ -218,9 +218,15 @@ export function PlayPage(): JSX.Element {
   const hint = async (): Promise<void> => {
     if (!game || !chess || game.over || chess.turn() !== game.me || gate !== 'idle') return;
     setStatus('Thinking…');
+    const hintFen = fen;
     const r = evBefore.current && evBefore.current.fen === fen ? await evBefore.current.p : await evalPos(fen, 10).catch(() => null);
+    const cur = usePlayStore.getState().game;
+    if (!cur || boardOf(cur).fen() !== hintFen) return; // the position changed while the engine was thinking
     setStatus('Your move');
-    if (!r?.best) return;
+    if (!r?.best) {
+      toast('No hint available right now. Look for checks, captures and threats.');
+      return;
+    }
     const m = moveInfo(fen, r.best);
     if (!m) return;
     setMarks({ [r.best.slice(0, 2)]: 'good' });
@@ -230,7 +236,10 @@ export function PlayPage(): JSX.Element {
 
   const undo = (): void => {
     const cur = usePlayStore.getState().game;
-    if (!cur || !cur.moves.length) return;
+    if (!cur || !cur.moves.length) {
+      toast('Nothing to undo yet.');
+      return;
+    }
     const moves = cur.moves.slice();
     moves.pop();
     // the bot replied after the user's move: take back that reply too
@@ -245,12 +254,25 @@ export function PlayPage(): JSX.Element {
     setMarks({});
   };
 
+  const saving = useRef(false);
   const review = async (): Promise<void> => {
-    if (!game || !game.result) return;
-    const row = await saveBotGame(repo, { source: 'bot', username, botName: `Bot (${LEVELS[game.level].name})`, userColor: game.me, fen0: game.fen0, moves: game.moves, result: game.result });
+    if (!game || !game.result || saving.current) return;
+    saving.current = true;
+    let row;
+    try {
+      row = await saveBotGame(repo, { source: 'bot', username, botName: `Bot (${LEVELS[game.level].name})`, userColor: game.me, fen0: game.fen0, moves: game.moves, result: game.result });
+    } catch {
+      saving.current = false;
+      toast('Could not save the game. Try again.');
+      return;
+    }
     void controller.analyzePending(true);
     nav(`/games/${row.id}/walk`);
   };
+
+  useEffect(() => {
+    if (prompt || game?.over) document.querySelector('[data-testid=blunder-check],[data-testid=game-over]')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }, [prompt, game?.over]);
 
   if (!game || !chess) return <div className="muted">Loading…</div>;
 
@@ -361,7 +383,7 @@ export function PlayPage(): JSX.Element {
             ]}
             onChange={(c) => {
               update.mutate({ settings: { color: c } });
-              if (!game.started || game.over) freshGame({ color: c === 'r' ? undefined : c });
+              if (!game.started || game.over) freshGame({ color: c === 'r' ? (Math.random() < 0.5 ? 'w' : 'b') : c });
             }}
           />
         </div>

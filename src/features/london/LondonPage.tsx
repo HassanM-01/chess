@@ -185,7 +185,7 @@ export function LondonPage(): JSX.Element {
       turnSeq.current++;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fen, game?.over, gate]);
+  }, [fen, game?.id, game?.over, gate]);
 
   const advice = game && game.advFen === fen ? game.adv : null;
   // Show the coach arrow whenever advice is ready and the guide is on.
@@ -277,7 +277,10 @@ export function LondonPage(): JSX.Element {
 
   const undo = (): void => {
     const cur = useLondonStore.getState().game;
-    if (!cur || cur.moves.length < 2) return;
+    if (!cur || cur.moves.length < 2) {
+      toast('Nothing to undo yet.');
+      return;
+    }
     const moves = cur.moves.slice(0, -1);
     if (londonBoard({ ...cur, moves }).turn() !== 'w') moves.pop();
     turnSeq.current++;
@@ -289,9 +292,13 @@ export function LondonPage(): JSX.Element {
     setGate('idle');
   };
 
+  const saving = useRef(false);
   const review = async (): Promise<void> => {
-    if (!game?.result) return;
-    const row = await saveBotGame(repo, {
+    if (!game?.result || saving.current) return;
+    saving.current = true;
+    let row;
+    try {
+      row = await saveBotGame(repo, {
       source: 'london',
       username,
       botName: `London bot (${LONDON_LEVELS[game.level].name})`,
@@ -301,9 +308,18 @@ export function LondonPage(): JSX.Element {
       result: game.result,
       opening: `London System vs ${game.plan.name}`,
     });
+    } catch {
+      saving.current = false;
+      toast('Could not save the game. Try again.');
+      return;
+    }
     void controller.analyzePending(true);
     nav(`/games/${row.id}/walk`);
   };
+
+  useEffect(() => {
+    if (prompt || game?.over) document.querySelector('[data-testid=london-prompt],[data-testid=london-over]')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }, [prompt, game?.over]);
 
   if (!game || !chess) return <div className="muted">Loading…</div>;
 

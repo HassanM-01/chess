@@ -4,7 +4,10 @@ import type { Uci } from '@/chess/types';
 import type { Advice } from './advice';
 import { LONDON_PLANS, type LondonPlan } from './steps';
 
+let nextId = 1;
+
 export interface LondonGame {
+  id: number;
   moves: Uci[];
   plan: LondonPlan;
   /** plan moves the bot already used */
@@ -21,7 +24,7 @@ export interface LondonGame {
 
 export function newLondonGame(level: number, o: { moves?: Uci[]; plan?: LondonPlan } = {}): LondonGame {
   const plan = o.plan ?? LONDON_PLANS[Math.floor(Math.random() * LONDON_PLANS.length)];
-  return { moves: o.moves ?? [], plan, used: [], level, over: false, result: null, title: null, adv: null, advFen: null, score: { london: 0, total: 0 } };
+  return { id: nextId++, moves: o.moves ?? [], plan, used: [], level, over: false, result: null, title: null, adv: null, advFen: null, score: { london: 0, total: 0 } };
 }
 
 export function londonBoard(g: LondonGame): Chess {

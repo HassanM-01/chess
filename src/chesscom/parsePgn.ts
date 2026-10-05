@@ -22,7 +22,8 @@ export function externalIdFromUrl(url: string | undefined | null): string | null
 }
 
 export function terminationFromHeader(raw: string | undefined, result: string | undefined): Termination {
-  const t = (raw ?? '').toLowerCase();
+  // The header reads "<username> won by resignation": drop the player name so usernames containing "time" or "checkmate" cannot match.
+  const t = (raw ?? '').toLowerCase().replace(/^.*?\s(won|drawn|lost)\b/, '$1');
   if (result === '1/2-1/2' && !t.includes('abandon')) return 'draw';
   if (t.includes('checkmate')) return 'checkmate';
   if (t.includes('resign')) return 'resignation';
@@ -35,7 +36,13 @@ export function terminationFromHeader(raw: string | undefined, result: string | 
 export function openingFromHeaders(h: Record<string, string>): string | null {
   if (h.ECOUrl) {
     const slug = h.ECOUrl.split('/').pop();
-    if (slug) return decodeURIComponent(slug).replace(/-/g, ' ').replace(/\.{3}/g, '...').slice(0, 70);
+    if (slug) {
+      try {
+        return decodeURIComponent(slug).replace(/-/g, ' ').replace(/\.{3}/g, '...').slice(0, 70);
+      } catch {
+        /* malformed escape: fall back to the Opening header */
+      }
+    }
   }
   return h.Opening ?? null;
 }

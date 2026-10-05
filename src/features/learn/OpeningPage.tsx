@@ -7,6 +7,7 @@ import { colorName, START_FEN, type Uci } from '@/chess/types';
 import { Board, arrowOf, arrowsOf } from '@/components/Board';
 import { SessTop } from '@/components/ui';
 import { OPENINGS, type OpeningKey } from '@/content/openings';
+import { toast } from '@/state/toast';
 import { useProgress, useProgressUpdater } from '@/state/queries';
 
 interface Say {
@@ -120,7 +121,10 @@ function Trainer({ setKey, startLine, cycle }: { setKey: OpeningKey; startLine: 
         <h2>{line.name}</h2>
         <div className="small muted">{`You play ${colorName(set.side)}. ${line.moves.length} moves.${count ? ` Completed ${count} time${count === 1 ? '' : 's'}.` : ''}`}</div>
       </div>
-      <Board fen={fen} orientation={set.side} interactive={myTurn} movableColor={set.side} lastMove={lastUci} arrows={hintArrow} onMove={onMove} />
+      <Board fen={fen} orientation={set.side} interactive={myTurn} movableColor={set.side} lastMove={lastUci} arrows={hintArrow} onMove={onMove}
+        onBadTap={() => toast(`Tap one of your ${colorName(set.side).toLowerCase()} pieces, then where it should go.`)}
+        onIdleTap={() => toast(done ? 'Line complete. Tap Repeat or Next line.' : 'The trainer is playing its move…')}
+      />
       {say ? (
         <div className={`feedback ${say.tone}`} aria-live="polite">
           {say.eyebrow && <div className="eyebrow">{say.eyebrow}</div>}

@@ -131,7 +131,7 @@ export function ReviewPage(): JSX.Element {
               Practice it
             </button>
           </div>
-          <AskCoach mistake={{ ...m, replyFen: fens[m.ply + 1] }} color={me} />
+          <AskCoach key={m.ply} mistake={{ ...m, replyFen: fens[m.ply + 1] }} color={me} />
         </div>
       ) : prevM ? (
         <div className="feedback warn">

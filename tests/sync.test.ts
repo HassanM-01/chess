@@ -123,3 +123,53 @@ describe('chess.com client', () => {
     await expect(client.validateUsername('!!')).rejects.toMatchObject({ kind: 'notfound' });
   });
 });
+
+describe('review fixes', () => {
+  it('termination ignores the player name inside the header', async () => {
+    const { terminationFromHeader } = await import('@/chesscom/parsePgn');
+    expect(terminationFromHeader('checkmate_king won on time', '1-0')).toBe('time');
+    expect(terminationFromHeader('timelord won - game abandoned', '1-0')).toBe('abandoned');
+    expect(terminationFromHeader('xx_checkmate won by resignation', '0-1')).toBe('resignation');
+    expect(terminationFromHeader('huhsaaan won by checkmate', '1-0')).toBe('checkmate');
+    expect(terminationFromHeader('Game drawn by repetition', '1/2-1/2')).toBe('draw');
+  });
+
+  it('a malformed ECOUrl escape does not abort parsing', async () => {
+    const { parseGame } = await import('@/chesscom/parsePgn');
+    const g = parseGame('[White "a"]\n[Black "b"]\n[Result "1-0"]\n[ECOUrl "https://www.chess.com/openings/Bad%E0%A4%A"]\n\n1. e4 e5 2. Nf3 Nc6 1-0', { username: 'a', source: 'pgn' });
+    expect(g?.movesUci).toHaveLength(4);
+  });
+
+  it('changing the chess.com username resets the sync cursor', async () => {
+    const repo = createMemoryRepo({ username: 'huhsaaan' });
+    await repo.updateProfile({ lastSyncedAt: '2026-10-05T00:00:00.000Z' });
+    await repo.updateProfile({ chesscomUsername: 'someoneelse' });
+    expect((await repo.getProfile()).lastSyncedAt).toBeNull();
+  });
+
+  it('a failing month does not lose the others and does not advance the cursor; total failure throws', async () => {
+    const repo = createMemoryRepo({ username: 'huhsaaan' });
+    const { client } = fakeClient();
+    const flaky = { ...client, getMonth: async (u: string, y: number, m: number) => { if (m === 9) throw new ChesscomError('boom', 'http', 500); return client.getMonth(u, y, m); } };
+    const r = await syncChesscomGames(repo, flaky, undefined, () => NOW);
+    expect(r.failedMonths).toBe(1);
+    expect(r.newGames).toBeGreaterThan(0);
+    expect((await repo.getProfile()).lastSyncedAt).toBeNull();
+    const dead = { ...client, getMonth: async () => { throw new ChesscomError('down', 'network'); } };
+    await expect(syncChesscomGames(createMemoryRepo({ username: 'huhsaaan' }), dead)).rejects.toBeInstanceOf(ChesscomError);
+  });
+
+  it('after a direct 429 the client tries the proxy once', async () => {
+    const urls: string[] = [];
+    const client = createChesscomClient({
+      sleep: async () => undefined,
+      fetch: async (input) => {
+        const u = String(input);
+        urls.push(u);
+        return u.startsWith('/api/chesscom') ? new Response(JSON.stringify({ archives: ['x'] }), { status: 200 }) : new Response('{}', { status: 429 });
+      },
+    });
+    expect(await client.getArchives('abc')).toEqual(['x']);
+    expect(urls.some((u) => u.startsWith('/api/chesscom'))).toBe(true);
+  });
+});

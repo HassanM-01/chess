@@ -327,7 +327,12 @@ export function createSupabaseRepo(sb: SupabaseClient, userId: string): Repo {
       const cur = await repo.getProfile();
       const row: Record<string, unknown> = {};
       if (patch.displayName !== undefined) row.display_name = patch.displayName;
-      if (patch.chesscomUsername !== undefined) row.chesscom_username = patch.chesscomUsername ? patch.chesscomUsername.trim().toLowerCase() : null;
+      if (patch.chesscomUsername !== undefined) {
+        const next = patch.chesscomUsername ? patch.chesscomUsername.trim().toLowerCase() : null;
+        row.chesscom_username = next;
+        // A different account has a different history: forget the old sync cursor so the first pull fetches the last 2 months.
+        if (next !== cur.chesscomUsername && patch.lastSyncedAt === undefined) row.last_synced_at = null;
+      }
       if (patch.settings !== undefined) row.settings = { ...cur.settings, ...patch.settings };
       if (patch.lastSyncedAt !== undefined) row.last_synced_at = patch.lastSyncedAt;
       if (!Object.keys(row).length) return cur;
@@ -399,7 +404,8 @@ export function createSupabaseRepo(sb: SupabaseClient, userId: string): Repo {
           { onConflict: 'game_id' },
         ).select('game_id'),
       );
-      // Re-analysis replaces mistakes (their own_mistake training items cascade away).
+      // Re-analysis replaces mistakes and their own_mistake training items (also those whose mistake link was null).
+      ok(await sb.from('training_items').delete().eq('game_id', input.gameId).eq('user_id', userId).eq('kind', 'own_mistake').select('id'));
       ok(await sb.from('mistakes').delete().eq('game_id', input.gameId).eq('user_id', userId).select('id'));
       let mistakes: MistakeRow[] = [];
       if (input.mistakes.length) {

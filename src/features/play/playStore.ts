@@ -3,7 +3,11 @@ import { create } from 'zustand';
 import { Chess, uciMove } from '@/chess/compat';
 import { START_FEN, type Color, type Uci } from '@/chess/types';
 
+let nextId = 1;
+
 export interface PlayGame {
+  /** unique per game: lets effects restart when "New" produces an identical position */
+  id: number;
   fen0: string;
   moves: Uci[];
   me: Color;
@@ -19,7 +23,7 @@ export interface PlayGame {
 }
 
 export function newPlayGame(o: { fen?: string; me: Color; level: number; moves?: Uci[] }): PlayGame {
-  return { fen0: o.fen ?? START_FEN, moves: o.moves ?? [], me: o.me, level: o.level, over: false, started: !!o.moves?.length, custom: !!o.fen, caught: 0, result: null, title: null };
+  return { id: nextId++, fen0: o.fen ?? START_FEN, moves: o.moves ?? [], me: o.me, level: o.level, over: false, started: !!o.moves?.length, custom: !!o.fen, caught: 0, result: null, title: null };
 }
 
 /** Replay a game's moves to get its current board. */

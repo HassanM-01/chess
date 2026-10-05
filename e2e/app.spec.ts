@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { devices, expect, test, type BrowserContext, type Page } from '@playwright/test';
 import { Chess } from 'chess.js';
 import { OPENINGS } from '../src/content/openings';
-import { board, fixtureGames, localState, mockChesscom, onboardAndPull, specSubset, sq, tapMove } from './helpers';
+import { board, fixtureGames, localState, mockChesscom, onboardAndPull, playUci, specSubset, sq, tapMove } from './helpers';
 
 const N = specSubset().length; // games the mocked chess.com returns
 
@@ -212,10 +212,10 @@ test.describe('Phase 5: training', () => {
       const pz = PUZZLES.find((p) => p.fen === fen);
       expect(pz, `puzzle for ${fen}`).toBeDefined();
       const line = (pz as RawPuzzle).moves;
-      await tapMove(page, line[0].slice(0, 2), line[0].slice(2, 4));
+      await playUci(page, line[0]);
       for (let i = 2; i < line.length; i += 2) {
         await page.waitForTimeout(800); // the reply is played automatically
-        await tapMove(page, line[i].slice(0, 2), line[i].slice(2, 4));
+        await playUci(page, line[i]);
       }
     };
 

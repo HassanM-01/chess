@@ -48,3 +48,9 @@ drop trigger if exists profiles_lowercase_username on public.profiles;
 create trigger profiles_lowercase_username
   before insert or update on public.profiles
   for each row execute function public.lowercase_chesscom_username();
+
+-- Backfill: users created before this migration ran (or whose signup trigger failed) get their rows now.
+insert into public.profiles (id, display_name)
+  select u.id, coalesce(u.raw_user_meta_data ->> 'full_name', split_part(u.email, '@', 1)) from auth.users u
+  on conflict (id) do nothing;
+insert into public.progress (user_id) select u.id from auth.users u on conflict (user_id) do nothing;

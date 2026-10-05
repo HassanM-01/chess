@@ -19,6 +19,8 @@ export interface SyncResult {
   /** games that were already stored */
   existing: number;
   unreadable: number;
+  /** months that could not be fetched (the sync cursor is not advanced when this is > 0) */
+  failedMonths: number;
   months: number;
   /** ids of rows that need analysis (status pending) */
   pendingIds: string[];
@@ -60,13 +62,22 @@ export async function syncChesscomGames(
   const months = selectMonths(archives, profile.lastSyncedAt);
 
   const known = new Set((await repo.listGames()).map((g) => g.externalId).filter((x): x is string => !!x));
-  const result: SyncResult = { newGames: 0, skipped: 0, existing: 0, unreadable: 0, months: months.length, pendingIds: [] };
+  const result: SyncResult = { newGames: 0, skipped: 0, existing: 0, unreadable: 0, failedMonths: 0, months: months.length, pendingIds: [] };
 
+  let lastError: unknown = null;
   // One month at a time: chess.com rate-limits parallel requests.
   for (let i = 0; i < months.length; i++) {
     const m = months[i];
     onProgress?.({ stage: 'month', month: i + 1, months: months.length, label: `${m.year}-${String(m.month).padStart(2, '0')}` });
-    const games = await client.getMonth(username, m.year, m.month);
+    let games: ChesscomGame[];
+    try {
+      games = await client.getMonth(username, m.year, m.month);
+    } catch (e) {
+      // One bad month (transient 5xx, rate limit) must not lose the months already fetched.
+      result.failedMonths++;
+      lastError = e;
+      continue;
+    }
     const batch: NewGame[] = [];
     for (const g of games) {
       const prepared = prepareGame(g, username, known);
@@ -87,11 +98,22 @@ export async function syncChesscomGames(
     }
   }
 
-  await repo.updateProfile({ lastSyncedAt: now().toISOString() });
+  // Nothing could be fetched at all: surface the error instead of pretending we synced.
+  if (months.length > 0 && result.failedMonths === months.length) throw lastError instanceof Error ? lastError : new ChesscomError('Could not fetch your games.', 'network');
+  // Only advance the cursor when every month made it, so a failed month is retried next time.
+  if (result.failedMonths === 0) await repo.updateProfile({ lastSyncedAt: now().toISOString() });
   return result;
 }
 
 function prepareGame(g: ChesscomGame, username: string, known: Set<string>): NewGame | 'existing' | 'skip-rules' | 'unreadable' {
+  try {
+    return prepareGameUnsafe(g, username, known);
+  } catch {
+    return 'unreadable'; // one malformed game must not abort the whole sync
+  }
+}
+
+function prepareGameUnsafe(g: ChesscomGame, username: string, known: Set<string>): NewGame | 'existing' | 'skip-rules' | 'unreadable' {
   if (g.rules !== 'chess') return 'skip-rules';
   const ext = externalIdFromUrl(g.url);
   if (ext && known.has(ext)) return 'existing';

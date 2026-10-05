@@ -123,7 +123,7 @@ export function computeSkillProfile(input: SkillInput): SkillProfile {
       topPiece: top(pieces[k]),
     }))
     .sort((a, b) => b.score - a.score);
-  const weaknesses: Weakness[] = ranked.slice(0, 3);
+  const weaknesses: Weakness[] = [];
 
   // ---- habit flags
   let castledEarly = 0;
@@ -142,6 +142,10 @@ export function computeSkillProfile(input: SkillInput): SkillProfile {
   }
   if (n >= 3 && castledEarly / n < 0.5) weaknesses.push({ key: 'nocastle', score: (n - castledEarly) / n, count: n - castledEarly, games: n - castledEarly });
   if (n >= 3 && earlyQueen / n >= 0.4) weaknesses.push({ key: 'earlyqueen', score: earlyQueen / n, count: earlyQueen, games: earlyQueen });
+
+  // Habits take their slots first; categories (already sorted by score) fill the rest, 4 in total.
+  const habitCount = weaknesses.length;
+  weaknesses.unshift(...ranked.slice(0, Math.max(0, 4 - habitCount)));
 
   // ---- how losses ended
   const lossesBy: Record<string, number> = {};
@@ -169,7 +173,7 @@ export function computeSkillProfile(input: SkillInput): SkillProfile {
     let w = 1;
     if (maxThemeScore > 0) w += 3 * ((themeScore[t] ?? 0) / maxThemeScore);
     const r = recentByTheme.get(t);
-    if (r && r.length >= 3 && r.filter(Boolean).length / r.length < 0.6) w += 2;
+    if (r && r.length >= 1 && r.filter(Boolean).length / r.length < 0.6) w += 2;
     themeWeights[t] = w;
   }
 

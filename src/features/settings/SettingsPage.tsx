@@ -15,7 +15,7 @@ export function SettingsPage(): JSX.Element {
   const { mode, email, signOut, deleteAccount } = useAuth();
   const { data: profile } = useProfile();
   const update = useUpdateProfile();
-  const [username, setUsername] = useState('');
+  const [username, setUsername] = useState<string | null>(null);
   const [display, setDisplay] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -28,15 +28,18 @@ export function SettingsPage(): JSX.Element {
 
   const saveUsername = async (e: FormEvent): Promise<void> => {
     e.preventDefault();
-    const name = (username || profile.chesscomUsername || '').trim();
-    if (!name || name.toLowerCase() === profile.chesscomUsername) return;
+    const name = (username ?? profile.chesscomUsername ?? '').trim();
+    if (!name || name.toLowerCase() === profile.chesscomUsername) {
+      toast(name ? 'That is already your username.' : 'Enter your chess.com username.');
+      return;
+    }
     setBusy(true);
     setError(null);
     try {
       const canonical = await chesscomClient.validateUsername(name);
       await update.mutateAsync({ chesscomUsername: canonical });
       toast('Username saved. Pull your games again to refresh the report.');
-      setUsername('');
+      setUsername(null);
     } catch (err) {
       if (err instanceof ChesscomError) setError(err.kind === 'notfound' ? `We couldn't find "${name}" on chess.com.` : err.message);
       else setError(usernameSaveError(err));
@@ -72,7 +75,7 @@ export function SettingsPage(): JSX.Element {
           <label className="lbl" htmlFor="uname">
             chess.com username
           </label>
-          <input id="uname" type="text" autoCapitalize="off" autoCorrect="off" spellCheck={false} value={username || profile.chesscomUsername || ''} onChange={(e) => setUsername(e.target.value)} />
+          <input id="uname" type="text" autoCapitalize="off" autoCorrect="off" spellCheck={false} value={username ?? profile.chesscomUsername ?? ''} onChange={(e) => setUsername(e.target.value)} />
         </div>
         {error && (
           <p className="err" role="alert">

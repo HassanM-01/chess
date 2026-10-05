@@ -77,6 +77,15 @@ export function createChesscomClient(opts: ClientOptions = {}): ChesscomClient {
         throw new ChesscomError(`Could not reach chess.com (${String(e2)})`, 'network');
       }
     }
+    // Still rate limited directly: the proxy has its own User-Agent and edge cache, so try it once before giving up.
+    if (res.status === 429 && proxy) {
+      try {
+        const viaProxy = await getWithRetry(`${proxyBase}?path=${encodeURIComponent(path)}`);
+        if (viaProxy.ok) res = viaProxy;
+      } catch {
+        /* keep the original 429 */
+      }
+    }
     if (res.status === 404) throw new ChesscomError('Not found', 'notfound', 404);
     if (res.status === 429) throw new ChesscomError('chess.com is busy. Try again in a minute.', 'ratelimited', 429);
     if (!res.ok) throw new ChesscomError(`chess.com returned ${res.status}`, 'http', res.status);

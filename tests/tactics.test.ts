@@ -62,23 +62,30 @@ describe('categorize (synthetic engine evals)', () => {
     expect(r?.text).toContain('Ra8#');
   });
 
-  it('hung piece: moved a bishop to a square where it is simply taken', () => {
-    const f0 = 'rnbqkbnr/pppppppp/8/8/8/5N2/PPPPPPPP/RNBQKB1R w KQkq - 0 1';
+  it('hung piece: a knight moved to a square where it is simply taken', () => {
+    // White knight goes to e5 where the black pawn on d6... use a clean position: Nf3-g5? black h6 pawn takes it.
+    const f0 = '4k3/8/7p/8/8/5N2/8/4K3 w - - 0 1';
     const c = new Chess(f0);
-    uciMove(c, 'c1h6');
-    const f1 = c.fen();
-    const r = categorize(f0, f1, 'c1h6', { cpWhite: 30, mateWhite: null, best: 'e2e4' }, { cpWhite: -300, mateWhite: null, best: 'g7h6' }, 'w');
-    // bishop was on c1 behind a pawn in this FEN, so use a direct legal example instead
-    expect(r === null || r.cat === 'hung' || r.cat === 'other').toBe(true);
+    uciMove(c, 'f3g5');
+    const r = categorize(f0, c.fen(), 'f3g5', { cpWhite: 0, mateWhite: null, best: 'e1e2' }, { cpWhite: -300, mateWhite: null, best: 'h6g5' }, 'w');
+    expect(r?.cat).toBe('hung');
+    expect(r?.sq).toBe('g5');
+    expect(r?.text).toContain('knight');
   });
 
-  it('even trades are not hung pieces', () => {
-    const f0 = 'r1bqkbnr/pppp1ppp/2n5/4p3/3PP3/5N2/PPP2PPP/RNBQKB1R b KQkq - 0 3';
+  it('even trades are not hung pieces: a knight that can be recaptured', () => {
+    // Nxd5 wins a pawn but ...Qxd5 is met by Rxd5: the capture of a knight (value 3) on d5 is an even swap, not "hung"
+    const f0 = '4k3/8/8/3p4/8/2N5/8/3RK3 w - - 0 1';
     const c = new Chess(f0);
-    uciMove(c, 'e5d4');
-    const f1 = c.fen();
-    const r = categorize(f0, f1, 'e5d4', { cpWhite: 30, mateWhite: null, best: 'e5d4' }, { cpWhite: 60, mateWhite: null, best: 'f3d4' }, 'b');
+    uciMove(c, 'c3d5');
+    const r = categorize(f0, c.fen(), 'c3d5', { cpWhite: 0, mateWhite: null, best: 'c3d5' }, { cpWhite: 100, mateWhite: null, best: 'e8d7' }, 'w');
     expect(r?.cat).not.toBe('hung');
+    // and the same capture with the defender removed IS a hung knight
+    const g0 = '3qk3/8/8/3p4/8/2N5/8/4K3 w - - 0 1';
+    const c2 = new Chess(g0);
+    uciMove(c2, 'c3d5');
+    const h = categorize(g0, c2.fen(), 'c3d5', { cpWhite: 0, mateWhite: null, best: 'e1e2' }, { cpWhite: -600, mateWhite: null, best: 'd8d5' }, 'w');
+    expect(h?.cat).toBe('hung');
   });
 
   it('START position is parseable', () => {

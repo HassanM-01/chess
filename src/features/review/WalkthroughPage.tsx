@@ -2,7 +2,6 @@ import { useEffect } from 'react';
 import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { ProgressBar, SessTop, Spinner } from '@/components/ui';
 import { useProfile, useUpdateProfile } from '@/state/queries';
-import { toast } from '@/state/toast';
 import { WalkthroughView } from './WalkthroughView';
 import { useGameReview } from './useGameReview';
 
@@ -27,10 +26,7 @@ export function WalkthroughPage(): JSX.Element {
 
   if (game.isLoading || analysis.isLoading) return <Spinner label="Loading the game…" />;
   if (!g) return <Navigate to="/games" replace />;
-  if (!g.userColor) {
-    toast('Pick which side you played first.');
-    return <Navigate to={`/games/${g.id}`} replace />;
-  }
+  if (!g.userColor) return <Navigate to={`/games/${g.id}`} replace state={{ pickSide: true }} />;
   if (!analysis.data) {
     return (
       <div className="stack">

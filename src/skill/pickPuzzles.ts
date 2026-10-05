@@ -88,8 +88,10 @@ export async function pickPuzzles(repo: Repo, o: PickOptions): Promise<PuzzleRow
   }
 
   // 2) theme slots
-  const weights: Record<ThemeKey, number> =
-    o.theme === 'mix' ? ((o.themeWeights ?? Object.fromEntries(THEME_KEYS.map((k) => [k, 1]))) as Record<ThemeKey, number>) : ({ [o.theme]: 1 } as Record<ThemeKey, number>);
+  // Copy: exhausted themes are deleted from this object while picking and must not leak into the caller's cached profile.
+  const weights: Record<ThemeKey, number> = {
+    ...(o.theme === 'mix' ? ((o.themeWeights ?? Object.fromEntries(THEME_KEYS.map((k) => [k, 1]))) as Record<ThemeKey, number>) : ({ [o.theme]: 1 } as Record<ThemeKey, number>)),
+  };
   const cache = new Map<string, PuzzleRow[]>();
   const candidatesFor = async (theme: ThemeKey, need: number): Promise<PuzzleRow[]> => {
     const hit = cache.get(theme);

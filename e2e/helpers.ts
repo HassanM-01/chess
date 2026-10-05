@@ -94,10 +94,17 @@ export const board = (page: Page): Locator => page.getByTestId('board');
 export const sq = (page: Page, s: string): Locator => page.locator(`[data-testid=board] [data-sq=${s}]`).first();
 
 /** Click from-square then to-square (tap to move). */
-export async function tapMove(page: Page, from: string, to: string): Promise<void> {
+export async function tapMove(page: Page, from: string, to: string, promotion?: string): Promise<void> {
   await sq(page, from).click();
   await sq(page, to).click();
+  if (promotion) {
+    const names: Record<string, string> = { q: 'queen', r: 'rook', b: 'bishop', n: 'knight' };
+    await page.getByRole('dialog', { name: /promotion/i }).getByRole('button', { name: names[promotion] }).click();
+  }
 }
+
+/** Play a UCI move (with the promotion piece when it has one). */
+export const playUci = (page: Page, u: string): Promise<void> => tapMove(page, u.slice(0, 2), u.slice(2, 4), u[4]);
 
 export async function localState(page: Page): Promise<LocalState> {
   // the memory repo debounces writes by 250 ms

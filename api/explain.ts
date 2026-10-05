@@ -24,6 +24,15 @@ export function buildPrompt(b: Record<string, unknown>): string {
   );
 }
 
+function parseBody(req: VercelRequest): Record<string, unknown> | null {
+  try {
+    const b = typeof req.body === 'string' ? (JSON.parse(req.body) as unknown) : req.body;
+    return b && typeof b === 'object' ? (b as Record<string, unknown>) : null;
+  } catch {
+    return null;
+  }
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
@@ -42,7 +51,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
   const user = await requireUser(req, res, sb);
   if (!user) return;
 
-  // Count first, so retries cannot bypass the limit.
+  // Validate first so malformed requests never cost the user a daily question.
+  const body = parseBody(req);
+  if (!body || typeof body.fen !== 'string' || typeof body.played !== 'string') {
+    res.status(400).json({ error: 'Missing fen or played move.' });
+    return;
+  }
+
+  // Count just before calling upstream, so retries cannot bypass the limit.
   const { data: used, error } = await sb.rpc('bump_coach_usage', { p_user: user.id });
   if (error) {
     res.status(500).json({ error: 'Could not check your daily limit.' });
@@ -53,17 +69,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
     return;
   }
 
-  const body = (typeof req.body === 'string' ? JSON.parse(req.body) : req.body) as Record<string, unknown>;
-  if (!body || typeof body.fen !== 'string' || typeof body.played !== 'string') {
-    res.status(400).json({ error: 'Missing fen or played move.' });
+  let upstream: Response;
+  try {
+    upstream = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
+      body: JSON.stringify({ model: MODEL, max_tokens: 200, stream: true, messages: [{ role: 'user', content: buildPrompt(body) }] }),
+    });
+  } catch {
+    res.status(502).json({ error: 'The coach is busy. Try again in a minute.' });
     return;
   }
-
-  const upstream = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: { 'content-type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
-    body: JSON.stringify({ model: MODEL, max_tokens: 200, stream: true, messages: [{ role: 'user', content: buildPrompt(body) }] }),
-  });
   if (!upstream.ok || !upstream.body) {
     res.status(502).json({ error: 'The coach is busy. Try again in a minute.' });
     return;
@@ -74,23 +90,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
   const reader = upstream.body.getReader();
   const dec = new TextDecoder();
   let buf = '';
-  for (;;) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    buf += dec.decode(value, { stream: true });
-    let i = buf.indexOf('\n');
-    while (i >= 0) {
-      const line = buf.slice(0, i).trim();
-      buf = buf.slice(i + 1);
-      i = buf.indexOf('\n');
-      if (!line.startsWith('data:')) continue;
-      try {
-        const evt = JSON.parse(line.slice(5)) as { type?: string; delta?: { type?: string; text?: string } };
-        if (evt.type === 'content_block_delta' && evt.delta?.type === 'text_delta' && evt.delta.text) res.write(evt.delta.text);
-      } catch {
-        /* ignore non-JSON keepalives */
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += dec.decode(value, { stream: true });
+      let i = buf.indexOf('\n');
+      while (i >= 0) {
+        const line = buf.slice(0, i).trim();
+        buf = buf.slice(i + 1);
+        i = buf.indexOf('\n');
+        if (!line.startsWith('data:')) continue;
+        try {
+          const evt = JSON.parse(line.slice(5)) as { type?: string; delta?: { type?: string; text?: string } };
+          if (evt.type === 'content_block_delta' && evt.delta?.type === 'text_delta' && evt.delta.text) res.write(evt.delta.text);
+        } catch {
+          /* ignore non-JSON keepalives */
+        }
       }
     }
+  } catch {
+    /* upstream dropped mid-stream: end the response with what we have */
+  } finally {
+    res.end();
   }
-  res.end();
 }

@@ -6,7 +6,7 @@ import { computeSkillProfile, type SkillProfile } from './computeSkillProfile';
 const counts = (source: string): boolean => source === 'chesscom' || source === 'pgn';
 
 export async function loadSkillProfile(repo: Repo, now: Date = new Date()): Promise<SkillProfile> {
-  const [games, mistakes, analyses, attempts] = await Promise.all([repo.listGames(), repo.listMistakes(), repo.listAnalyses(), repo.listAttempts({ limit: 400 })]);
+  const [games, mistakes, analyses, attempts] = await Promise.all([repo.listGames(), repo.listMistakes(), repo.listAnalyses(), repo.listAttempts({ limit: 1500 })]);
   const eligible = games.filter((g) => g.analysisStatus === 'done' && g.userColor && counts(g.source));
   return computeSkillProfile({ games: eligible, mistakes, summaries: analyses, attempts, now });
 }

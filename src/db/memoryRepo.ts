@@ -101,6 +101,8 @@ export function createMemoryRepo(opts: MemoryRepoOptions = {}): Repo & { _state:
     },
     async updateProfile(patch: ProfilePatch) {
       const norm = patch.chesscomUsername !== undefined ? { chesscomUsername: patch.chesscomUsername ? patch.chesscomUsername.trim().toLowerCase() : null } : {};
+      const changed = norm.chesscomUsername !== undefined && norm.chesscomUsername !== st.profile.chesscomUsername;
+      if (changed && patch.lastSyncedAt === undefined) (norm as Record<string, unknown>).lastSyncedAt = null;
       st.profile = { ...st.profile, ...patch, ...norm, settings: patch.settings ? { ...st.profile.settings, ...patch.settings } : st.profile.settings };
       save();
       return clone(st.profile);

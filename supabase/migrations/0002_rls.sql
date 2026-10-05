@@ -19,12 +19,21 @@ create policy profiles_update_own on public.profiles for update to authenticated
 -- Per-user tables: all CRUD where user_id = auth.uid().
 create policy games_all_own on public.games for all to authenticated
   using (user_id = (select auth.uid())) with check (user_id = (select auth.uid()));
+-- game_analysis / mistakes / training_items also verify that the referenced game (and mistake) belongs to the caller:
+-- foreign-key checks bypass RLS, so without this a user could attach rows to somebody else's (e.g. shared) game.
 create policy game_analysis_all_own on public.game_analysis for all to authenticated
-  using (user_id = (select auth.uid())) with check (user_id = (select auth.uid()));
+  using (user_id = (select auth.uid()))
+  with check (user_id = (select auth.uid())
+    and exists (select 1 from public.games g where g.id = game_id and g.user_id = (select auth.uid())));
 create policy mistakes_all_own on public.mistakes for all to authenticated
-  using (user_id = (select auth.uid())) with check (user_id = (select auth.uid()));
+  using (user_id = (select auth.uid()))
+  with check (user_id = (select auth.uid())
+    and exists (select 1 from public.games g where g.id = game_id and g.user_id = (select auth.uid())));
 create policy training_items_all_own on public.training_items for all to authenticated
-  using (user_id = (select auth.uid())) with check (user_id = (select auth.uid()));
+  using (user_id = (select auth.uid()))
+  with check (user_id = (select auth.uid())
+    and (game_id is null or exists (select 1 from public.games g where g.id = game_id and g.user_id = (select auth.uid())))
+    and (mistake_id is null or exists (select 1 from public.mistakes m where m.id = mistake_id and m.user_id = (select auth.uid()))));
 create policy attempts_all_own on public.attempts for all to authenticated
   using (user_id = (select auth.uid())) with check (user_id = (select auth.uid()));
 create policy theme_skill_all_own on public.theme_skill for all to authenticated

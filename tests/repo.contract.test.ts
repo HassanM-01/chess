@@ -199,10 +199,12 @@ function contract(name: string, make: () => Promise<{ repo: Repo; cleanup?: () =
     });
 
     it('puzzles: query by theme and rating window, exclude ids, count by theme, fetch by id', async () => {
-      const free = await repo.queryPuzzles({ theme: 'free' });
-      expect(free.map((p) => p.id).sort()).toEqual(['contract_a', 'contract_b']);
-      expect((await repo.queryPuzzles({ theme: 'free', minRating: 800, maxRating: 1000 })).map((p) => p.id)).toEqual(['contract_b']);
-      expect((await repo.queryPuzzles({ theme: 'free', excludeIds: ['contract_a'] })).map((p) => p.id)).toEqual(['contract_b']);
+      // A real database also holds the seeded puzzles, so only look at this test's own rows.
+      const mine = <T extends { id: string }>(rows: T[]): string[] => rows.filter((r) => r.id.startsWith('contract_')).map((r) => r.id).sort();
+      const all = { theme: 'free' as const, limit: 2000 };
+      expect(mine(await repo.queryPuzzles(all))).toEqual(['contract_a', 'contract_b']);
+      expect(mine(await repo.queryPuzzles({ ...all, minRating: 850, maxRating: 950 }))).toEqual(['contract_b']);
+      expect(mine(await repo.queryPuzzles({ ...all, excludeIds: ['contract_a'] }))).toEqual(['contract_b']);
       expect((await repo.queryPuzzles({ theme: 'free', limit: 1 })).length).toBe(1);
       const counts = await repo.countPuzzlesByTheme();
       expect(counts.free).toBeGreaterThanOrEqual(2);

@@ -134,6 +134,7 @@ interface ProgressDb {
   openings: Record<string, number>;
   daily: ProgressRow['daily'];
   play: ProgressRow['play'];
+  coach?: ProgressRow['coach'];
   updated_at: string;
 }
 
@@ -276,6 +277,7 @@ const mapProgress = (r: ProgressDb): ProgressRow => ({
   openings: r.openings ?? {},
   daily: r.daily ?? {},
   play: r.play ?? {},
+  coach: r.coach ?? {},
   updatedAt: r.updated_at,
 });
 

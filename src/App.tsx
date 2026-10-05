@@ -20,6 +20,7 @@ const SessionPage = lazy(() => import('@/features/train/SessionPage').then((m) =
 const LearnPage = lazy(() => import('@/features/learn/LearnPage').then((m) => ({ default: m.LearnPage })));
 const LessonPage = lazy(() => import('@/features/learn/LessonPage').then((m) => ({ default: m.LessonPage })));
 const OpeningPage = lazy(() => import('@/features/learn/OpeningPage').then((m) => ({ default: m.OpeningPage })));
+const ChatPage = lazy(() => import('@/coach/ChatPage').then((m) => ({ default: m.ChatPage })));
 const LondonPage = lazy(() => import('@/features/london/LondonPage').then((m) => ({ default: m.LondonPage })));
 const PlayPage = lazy(() => import('@/features/play/PlayPage').then((m) => ({ default: m.PlayPage })));
 const SettingsPage = lazy(() => import('@/features/settings/SettingsPage').then((m) => ({ default: m.SettingsPage })));
@@ -101,6 +102,7 @@ export function App(): JSX.Element {
                     <Route path="learn/opening/:set" element={<OpeningPage />} />
                     <Route path="learn/opening/:set/:line" element={<OpeningPage />} />
                     <Route path="london" element={<LondonPage />} />
+                    <Route path="coach/chat" element={<ChatPage />} />
                     <Route path="play" element={<PlayPage />} />
                     <Route path="settings" element={<SettingsPage />} />
                   </Route>

@@ -2,10 +2,9 @@
 import { useState } from 'react';
 import type { MistakeDraft } from '@/analysis/types';
 import { pvSan } from '@/chess/helpers';
-import { getSupabase, isSupabaseConfigured } from '@/lib/supabase';
+import { getSupabase } from '@/lib/supabase';
+import { coachEnabled } from '@/coach/client';
 import { evalPos } from '@/state/engine';
-
-export const coachEnabled = isSupabaseConfigured && import.meta.env.VITE_COACH_ENABLED === '1';
 
 type Mistake = Pick<MistakeDraft, 'fen' | 'playedSan' | 'bestSan' | 'replySan' | 'category' | 'explanation' | 'winDrop' | 'ply'> & { replyFen?: string };
 

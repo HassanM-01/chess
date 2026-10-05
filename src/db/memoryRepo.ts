@@ -53,7 +53,7 @@ function emptyState(userId: string, username: string | null): State {
     attempts: [],
     themeSkill: [],
     snapshots: [],
-    progress: { userId, lessons: {}, openings: {}, daily: {}, play: {}, updatedAt: t },
+    progress: { userId, coach: {}, lessons: {}, openings: {}, daily: {}, play: {}, updatedAt: t },
     attemptSeq: 1,
     snapshotSeq: 1,
   };

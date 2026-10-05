@@ -1,6 +1,7 @@
 // Domain types for the Supabase tables (spec section 4), camelCase. The Supabase repo maps to/from snake_case rows.
 import type { GameSummary, MistakeCategory, MistakeDraft, Outcome, Severity, Termination } from '@/analysis/types';
 import type { Phase } from '@/chess/tactics';
+import type { CoachState } from '@/coach/types';
 import type { Color, PieceType, Square, Uci } from '@/chess/types';
 import type { StoredEval } from '@/engine/types';
 
@@ -240,6 +241,8 @@ export interface PlayStats {
 }
 export interface ProgressRow {
   userId: string;
+  /** the AI coach's latest report (see src/coach) */
+  coach: CoachState;
   lessons: Record<string, boolean>;
   openings: Record<string, number>;
   daily: DailyState;

@@ -80,7 +80,7 @@ export interface Repo {
   listSnapshots(limit?: number): Promise<SkillSnapshotRow[]>;
 
   getProgress(): Promise<ProgressRow>;
-  updateProgress(patch: Partial<Pick<ProgressRow, 'lessons' | 'openings' | 'daily' | 'play'>>): Promise<ProgressRow>;
+  updateProgress(patch: Partial<Pick<ProgressRow, 'lessons' | 'openings' | 'daily' | 'play' | 'coach'>>): Promise<ProgressRow>;
 
   queryPuzzles(q: PuzzleQuery): Promise<PuzzleRow[]>;
   countPuzzlesByTheme(): Promise<Record<string, number>>;

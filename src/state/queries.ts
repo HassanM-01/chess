@@ -101,7 +101,7 @@ export function useUpdateProfile() {
 }
 
 /** Read-modify-write on the progress row (lessons, openings, daily, play), with an optimistic cache update. */
-export function useProgressUpdater(): (fn: (p: ProgressRow) => Partial<Pick<ProgressRow, 'lessons' | 'openings' | 'daily' | 'play'>>) => Promise<ProgressRow> {
+export function useProgressUpdater(): (fn: (p: ProgressRow) => Partial<Pick<ProgressRow, 'lessons' | 'openings' | 'daily' | 'play' | 'coach'>>) => Promise<ProgressRow> {
   const repo = useRepo();
   const qc = useQueryClient();
   return useCallback(

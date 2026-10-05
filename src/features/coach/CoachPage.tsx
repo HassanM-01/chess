@@ -5,6 +5,7 @@ import { THEMES } from '@/content/themes';
 import { LESSONS } from '@/content/lessons';
 import { weakInfo } from '@/content/cats';
 import { pieceName } from '@/chess/tactics';
+import { CoachPlanCard } from '@/coach/CoachPlanCard';
 import { Hero, Pill } from '@/components/ui';
 import type { ProgressRow, ThemeKey } from '@/db/types';
 import { cap } from '@/lib/util';
@@ -115,6 +116,8 @@ export function CoachPage(): JSX.Element {
           </Link>
         </div>
       )}
+
+      <CoachPlanCard />
 
       {!analyzed ? (
         <div className="card stack-s">

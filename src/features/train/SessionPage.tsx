@@ -14,8 +14,9 @@ import { wpFor } from '@/engine/winprob';
 import { engine, evalPos } from '@/state/engine';
 import { toast } from '@/state/toast';
 import { pieceHint, positionHint } from './hints';
-import { useSessionStore } from './sessionStore';
-import type { SessionItem } from './types';
+import { SessionDebrief } from '@/coach/SessionDebrief';
+import { useSessionStore, type SessionCursor } from './sessionStore';
+import type { SessionItem, SessionOptions } from './types';
 import { useRecordAnswer } from './useRecord';
 
 type Tone = '' | 'good' | 'bad' | 'warn';
@@ -135,7 +136,8 @@ function Runner(): JSX.Element {
       const s = st.current;
       const outcome = { firstTry: s.firstTry, usedHint: s.hintLevel > 0, ms: Date.now() - s.startedAt };
       const cur = useSessionStore.getState().cursor;
-      setCursor(ok ? { score: cur.score + 1 } : { missed: [...cur.missed, it] });
+      const result = { kind: it.kind, theme: it.kind === 'puz' ? (it.puzzle.themes[0] ?? null) : null, correctFirstTry: ok, usedHint: outcome.usedHint };
+      setCursor(ok ? { score: cur.score + 1, results: [...cur.results, result] } : { missed: [...cur.missed, it], results: [...cur.results, result] });
       const rec =
         it.kind === 'puz'
           ? it.item
@@ -351,7 +353,7 @@ function Runner(): JSX.Element {
   };
 
   // ---- render --------------------------------------------------------------------------------------
-  if (cursor.finished) return <Summary />;
+  if (cursor.finished) return <SessionSummary options={options} items={items} cursor={cursor} startSession={startSession} />;
 
   const s = st.current;
   const quiz = it.kind === 'threat' || it.kind === 'judge';
@@ -454,33 +456,44 @@ function Runner(): JSX.Element {
       </div>
     </div>
   );
-
-  function Summary(): JSX.Element {
-    const { score, missed } = cursor;
-    const total = items.length;
-    return (
-      <div className="stack" data-testid="summary">
-        <SessTop title={options.title} onBack={() => nav(options.returnTo ?? '/train', { replace: true })} />
-        <div className="card stack-s" style={{ textAlign: 'center' }}>
-          <div className="eyebrow">Session done</div>
-          <h1>{`${score} / ${total}`}</h1>
-          <p className="muted">
-            {score === total ? 'Perfect. Every one on the first try.' : score >= total * 0.7 ? 'Solid. The ones you missed will come back for review.' : 'These are hard at first. Repetition is how the patterns stick.'}
-          </p>
-        </div>
-        {missed.length > 0 && (
-          <button className="btn primary block" onClick={() => startSession(missed.slice(), { ...options, title: `${options.title}: the ones you missed`, dailyKey: undefined, onDone: undefined })}>
-            {`Redo the ${missed.length} you missed`}
-          </button>
-        )}
-        <button className="btn block" onClick={() => startSession(items.slice(), { ...options, onDone: undefined, dailyKey: undefined })}>
-          Do this whole set again
-        </button>
-        <button className={missed.length ? 'btn ghost block' : 'btn primary block'} onClick={() => nav(options.returnTo ?? '/train', { replace: true })}>
-          Done
-        </button>
-      </div>
-    );
-  }
 }
 
+function SessionSummary({
+  options,
+  items,
+  cursor,
+  startSession,
+}: {
+  options: SessionOptions;
+  items: SessionItem[];
+  cursor: SessionCursor;
+  startSession: (items: SessionItem[], options: SessionOptions) => void;
+}): JSX.Element {
+  const nav = useNavigate();
+  const { score, missed } = cursor;
+  const total = items.length;
+  return (
+    <div className="stack" data-testid="summary">
+      <SessTop title={options.title} onBack={() => nav(options.returnTo ?? '/train', { replace: true })} />
+      <div className="card stack-s" style={{ textAlign: 'center' }}>
+        <div className="eyebrow">Session done</div>
+        <h1>{`${score} / ${total}`}</h1>
+        <p className="muted">
+          {score === total ? 'Perfect. Every one on the first try.' : score >= total * 0.7 ? 'Solid. The ones you missed will come back for review.' : 'These are hard at first. Repetition is how the patterns stick.'}
+        </p>
+      </div>
+      <SessionDebrief title={options.title} score={score} results={cursor.results} />
+      {missed.length > 0 && (
+        <button className="btn primary block" onClick={() => startSession(missed.slice(), { ...options, title: `${options.title}: the ones you missed`, dailyKey: undefined, onDone: undefined })}>
+          {`Redo the ${missed.length} you missed`}
+        </button>
+      )}
+      <button className="btn block" onClick={() => startSession(items.slice(), { ...options, onDone: undefined, dailyKey: undefined })}>
+        Do this whole set again
+      </button>
+      <button className={missed.length ? 'btn ghost block' : 'btn primary block'} onClick={() => nav(options.returnTo ?? '/train', { replace: true })}>
+        Done
+      </button>
+    </div>
+  );
+}

@@ -67,7 +67,7 @@ test.describe('Phase 3: pull recent games and analysis', () => {
     const st = await localState(page);
     expect(st.profile.chesscomUsername).toBe('huhsaaan');
     expect(st.games.length).toBe(N);
-    expect(st.games.every((g) => g.analysisStatus === 'done')).toBe(true);
+    expect(st.games.map((g) => g.analysisStatus), 'every game analyzed').toEqual(st.games.map(() => 'done'));
     await expect(page.getByTestId('game-list').locator('a')).toHaveCount(N);
   });
 
@@ -101,7 +101,7 @@ test.describe('Phase 4: coach, walkthrough', () => {
     await expect(page.getByTestId('weaknesses')).toContainText(/times? in \d+ of \d+ games/);
     await expect(page.getByTestId('daily-plan')).toContainText("Today's 15 minutes");
     await expect(page.getByTestId('last-game-walk')).toBeVisible();
-    await expect(page.getByRole('link', { name: 'Coach' })).toHaveAttribute('aria-current', 'page');
+    await expect(page.getByRole('link', { name: 'Coach', exact: true })).toHaveAttribute('aria-current', 'page');
   });
 
   test("walkthrough for the YossufM 2026-10-01 game: red at moves 39, 40, 42, 43, and 'Mistakes »' jumps through them in order", async () => {
@@ -406,6 +406,120 @@ test.describe('Phase 6: learn and London', () => {
     await expect(page.getByTestId('keep-move')).toHaveText('Keep it');
     await page.getByTestId('take-back').click();
     await expect(page.getByTestId('london-prompt')).toHaveCount(0);
+  });
+});
+
+test.describe('AI coach (the /api/coach endpoint is mocked)', () => {
+  const REPORT = {
+    headline: 'You lose pieces to threats you do not see.',
+    diagnosis: 'In many games a piece was already attacked and your move ignored it.',
+    strengths: 'You develop quickly.',
+    habits: [{ title: 'Check their last move', why: 'It hides the threat.', fix: 'Ask what the piece that just moved attacks.' }],
+    plan: [
+      { day: 'Mon', title: 'Spot the threat', minutes: 10, action: 'threat' },
+      { day: 'Tue', title: 'A short lesson', minutes: 5, action: 'lesson:check' },
+      { day: 'Wed', title: 'Play with Blunder Check', minutes: 15, action: 'play' },
+    ],
+    encouragement: 'Keep going.',
+  };
+
+  interface Seen {
+    mode: string;
+    facts: string;
+    messages?: { role: string; content: string }[];
+    session?: string;
+    auth: string | undefined;
+  }
+
+  /** Mock the endpoint; `reply` decides what each mode answers. Returns the requests it saw. */
+  async function mockCoach(reply: (b: Seen) => { status?: number; json?: unknown; text?: string }): Promise<Seen[]> {
+    const seen: Seen[] = [];
+    await page.route('**/api/coach', async (route) => {
+      const b = route.request().postDataJSON() as Seen;
+      seen.push({ ...b, auth: route.request().headers().authorization });
+      const r = reply(b);
+      if (r.json !== undefined) await route.fulfill({ status: r.status ?? 200, contentType: 'application/json', body: JSON.stringify(r.json) });
+      else await route.fulfill({ status: r.status ?? 200, contentType: 'text/plain', body: r.text ?? '' });
+    });
+    return seen;
+  }
+
+  test('the plan card writes a plan from the facts, keeps it across reloads, and each item starts the right thing', async () => {
+    const seen = await mockCoach((b) => (b.mode === 'report' ? { json: { report: REPORT } } : { text: 'ok' }));
+    await page.goto('/');
+    const card = page.getByTestId('coach-plan');
+    await expect(card).toContainText('Your coach');
+    await page.getByTestId('coach-generate').click();
+    await expect(card).toContainText(REPORT.headline);
+    await expect(card).toContainText('Check their last move');
+    await expect(card.locator('.plan-item')).toHaveCount(3);
+
+    // what the browser sent: the engine-computed facts, never raw positions to analyse
+    expect(seen).toHaveLength(1);
+    expect(seen[0].mode).toBe('report');
+    const facts = JSON.parse(seen[0].facts) as { player: { games_analyzed: number }; biggest_weaknesses: unknown[]; recent_mistakes: { explanation: string }[]; stock: Record<string, number> };
+    expect(facts.player.games_analyzed).toBeGreaterThanOrEqual(3);
+    expect(facts.biggest_weaknesses.length).toBeGreaterThan(0);
+    expect(facts.recent_mistakes.length).toBeGreaterThan(0);
+    expect(facts.stock).toHaveProperty('personal_puzzles_unplayed');
+    expect(seen[0].facts.length).toBeLessThan(12000);
+
+    // saved with the user's progress, so it is still there after a reload
+    await page.reload();
+    await expect(page.getByTestId('coach-plan')).toContainText(REPORT.headline);
+    expect((await localState(page)).progress).toHaveProperty('coach');
+
+    // each plan item does what it says
+    await page.getByTestId('plan-go-0').click();
+    await expect(page).toHaveURL(/\/train\/session/);
+    await expect(page.getByTestId('session')).toBeVisible();
+    await page.goto('/');
+    await page.getByTestId('plan-go-1').click();
+    await expect(page).toHaveURL(/\/learn\/lesson\/check/);
+    await page.goto('/');
+    await page.getByTestId('plan-go-2').click();
+    await expect(page).toHaveURL(/\/play/);
+  });
+
+  test('chat sends the facts and the conversation, streams the answer into a bubble, and shows limit errors kindly', async () => {
+    let n = 0;
+    const seen = await mockCoach(() => (++n === 1 ? { text: 'Start with the game trainer: it targets your hanging pieces.' } : { status: 429, json: { error: "You've used today's coach questions. They reset tomorrow." } }));
+    await page.goto('/coach/chat');
+    await expect(page.getByTestId('chat')).toBeVisible();
+    await expect(page.locator('nav.tabs')).toBeHidden(); // a session-style screen: the input bar is never under the tab bar
+    await page.getByRole('button', { name: 'What should I work on this week?' }).click();
+    await expect(page.getByTestId('bubble-user')).toHaveText('What should I work on this week?');
+    await expect(page.getByTestId('bubble-assistant')).toContainText('Start with the game trainer');
+    expect(seen[0].mode).toBe('chat');
+    expect(JSON.parse(seen[0].facts)).toHaveProperty('player');
+    expect(seen[0].messages).toEqual([{ role: 'user', content: 'What should I work on this week?' }]);
+
+    await page.getByLabel('Message your coach').fill('And what about castling?');
+    await page.getByRole('button', { name: 'Send' }).click();
+    await expect(page.getByRole('alert')).toContainText("used today's coach questions");
+    // the history sent includes the first exchange
+    expect(seen[1].messages?.map((m) => m.role)).toEqual(['user', 'assistant', 'user']);
+    // the failed question is not left hanging as an empty reply
+    await expect(page.getByTestId('bubble-assistant')).toHaveCount(1);
+  });
+
+  test('after a session the coach debriefs how it went, using the actual results', async () => {
+    const seen = await mockCoach((b) => (b.mode === 'debrief' ? { text: 'You missed the one from your own game. Focus on what their last move attacks.' } : { text: '' }));
+    const st = await localState(page);
+    const m = st.mistakes[0];
+    await page.goto(`/games/${m.gameId}?ply=${m.ply}`);
+    await page.getByRole('button', { name: 'Practice it' }).click();
+    await expect(page.getByTestId('session')).toBeVisible();
+    await page.getByRole('button', { name: 'Show answer' }).click();
+    await page.getByTestId('next').click(); // one item: this finishes the session (counted as missed)
+    await expect(page.getByTestId('summary')).toBeVisible();
+    await page.getByTestId('debrief-ask').click();
+    await expect(page.getByTestId('debrief')).toContainText('what their last move attacks');
+    expect(seen).toHaveLength(1);
+    expect(seen[0].mode).toBe('debrief');
+    const session = JSON.parse(seen[0].session as string) as { total: number; score: number; results: { what: string; ok: boolean }[] };
+    expect(session).toMatchObject({ total: 1, score: 0 });
+    expect(session.results).toEqual([{ what: 'fix a mistake from your games', ok: false, hint: true }]);
   });
 });
 

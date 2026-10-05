@@ -1,10 +1,8 @@
-// "Ask Coach why" (spec 10). Verifies the Supabase JWT, rate-limits to 30/day per user, then streams a short plain-English
+// "Ask Coach why" (spec 10). Verifies the Supabase JWT, rate-limits per user (see dailyLimit in _anthropic.ts), then streams a short plain-English
 // explanation from the Anthropic Messages API. The API key never leaves the server. If the key is missing the route 404s.
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { callAnthropic, claimQuota, parseJsonBody, pipeText } from './_anthropic.js';
 import { clip, requireUser, serviceClient } from './_lib.js';
-
-export const DAILY_LIMIT = 30;
-const MODEL = process.env.ANTHROPIC_MODEL ?? 'claude-sonnet-5-5';
 
 export function buildPrompt(b: Record<string, unknown>): string {
   const side = b.color === 'b' ? 'Black' : 'White';
@@ -22,15 +20,6 @@ export function buildPrompt(b: Record<string, unknown>): string {
     `In 3 or 4 short sentences of plain English: say what went wrong with ${clip(b.played, 12)}, why ${clip(b.best, 12) || 'the better move'} is better, ` +
     'and one habit that would have caught it. Use square names only when they help. No headings, no lists, no em dashes.'
   );
-}
-
-function parseBody(req: VercelRequest): Record<string, unknown> | null {
-  try {
-    const b = typeof req.body === 'string' ? (JSON.parse(req.body) as unknown) : req.body;
-    return b && typeof b === 'object' ? (b as Record<string, unknown>) : null;
-  } catch {
-    return null;
-  }
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
@@ -52,66 +41,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
   if (!user) return;
 
   // Validate first so malformed requests never cost the user a daily question.
-  const body = parseBody(req);
+  const body = parseJsonBody(req);
   if (!body || typeof body.fen !== 'string' || typeof body.played !== 'string') {
     res.status(400).json({ error: 'Missing fen or played move.' });
     return;
   }
+  if (!(await claimQuota(sb, user.id, res))) return;
 
-  // Count just before calling upstream, so retries cannot bypass the limit.
-  const { data: used, error } = await sb.rpc('bump_coach_usage', { p_user: user.id });
-  if (error) {
-    res.status(500).json({ error: 'Could not check your daily limit.' });
-    return;
-  }
-  if (typeof used === 'number' && used > DAILY_LIMIT) {
-    res.status(429).json({ error: "You've used today's coach questions." });
-    return;
-  }
-
-  let upstream: Response;
   try {
-    upstream = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
-      body: JSON.stringify({ model: MODEL, max_tokens: 200, stream: true, messages: [{ role: 'user', content: buildPrompt(body) }] }),
-    });
-  } catch {
-    res.status(502).json({ error: 'The coach is busy. Try again in a minute.' });
-    return;
-  }
-  if (!upstream.ok || !upstream.body) {
-    res.status(502).json({ error: 'The coach is busy. Try again in a minute.' });
-    return;
-  }
-
-  res.setHeader('Content-Type', 'text/plain; charset=utf-8');
-  res.setHeader('Cache-Control', 'no-store');
-  const reader = upstream.body.getReader();
-  const dec = new TextDecoder();
-  let buf = '';
-  try {
-    for (;;) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      buf += dec.decode(value, { stream: true });
-      let i = buf.indexOf('\n');
-      while (i >= 0) {
-        const line = buf.slice(0, i).trim();
-        buf = buf.slice(i + 1);
-        i = buf.indexOf('\n');
-        if (!line.startsWith('data:')) continue;
-        try {
-          const evt = JSON.parse(line.slice(5)) as { type?: string; delta?: { type?: string; text?: string } };
-          if (evt.type === 'content_block_delta' && evt.delta?.type === 'text_delta' && evt.delta.text) res.write(evt.delta.text);
-        } catch {
-          /* ignore non-JSON keepalives */
-        }
-      }
+    const upstream = await callAnthropic(apiKey, { system: '', messages: [{ role: 'user', content: buildPrompt(body) }], maxTokens: 700, stream: true });
+    if (!upstream.ok || !upstream.body) {
+      res.status(502).json({ error: 'The coach is busy. Try again in a minute.' });
+      return;
     }
+    await pipeText(upstream, res);
   } catch {
-    /* upstream dropped mid-stream: end the response with what we have */
-  } finally {
-    res.end();
+    if (!res.headersSent) res.status(502).json({ error: 'The coach is busy. Try again in a minute.' });
+    else res.end();
   }
 }

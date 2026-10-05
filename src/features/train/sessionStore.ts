@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import type { SessionResult } from '@/coach/facts';
 import type { SessionItem, SessionOptions } from './types';
 
 export interface SessionCursor {
@@ -6,9 +7,11 @@ export interface SessionCursor {
   score: number;
   missed: SessionItem[];
   finished: boolean;
+  /** how each item went, for the coach's debrief */
+  results: SessionResult[];
 }
 
-const FRESH: SessionCursor = { idx: 0, score: 0, missed: [], finished: false };
+const FRESH: SessionCursor = { idx: 0, score: 0, missed: [], finished: false, results: [] };
 
 interface SessionStore {
   items: SessionItem[];
@@ -26,6 +29,6 @@ export const useSessionStore = create<SessionStore>((set) => ({
   options: { title: '' },
   run: 0,
   cursor: FRESH,
-  start: (items, options) => set((s) => ({ items, options, run: s.run + 1, cursor: { ...FRESH, missed: [] } })),
+  start: (items, options) => set((s) => ({ items, options, run: s.run + 1, cursor: { ...FRESH, missed: [], results: [] } })),
   setCursor: (patch) => set((s) => ({ cursor: { ...s.cursor, ...patch } })),
 }));

@@ -70,6 +70,7 @@ Node 22+ is required (`stockfish@18.0.8` is pinned on purpose: the spec's result
 | `VITE_GOOGLE_AUTH=1` | browser + Vercel | shows "Continue with Google" (enable the provider in Supabase first) |
 | `SUPABASE_SERVICE_ROLE_KEY` | Vercel functions + local scripts only | **never** prefix with `VITE_` |
 | `SUPABASE_URL` | Vercel functions | same value as `VITE_SUPABASE_URL` |
+| `COACH_DAILY_LIMIT` | Vercel functions | optional; AI uses per user per day, default 50 |
 | `ANTHROPIC_API_KEY` | Vercel functions | optional; without it `/api/explain` returns 404 and the button stays hidden. Model defaults to Sonnet 5.5; override with `ANTHROPIC_MODEL` |
 | `CHESSCOM_CONTACT_EMAIL` | Vercel functions | goes into the proxy's `User-Agent` |
 
@@ -102,6 +103,28 @@ repetition. Sessions serve personal puzzles first (about 70% of a set) and fill 
 
 Needs `supabase/migrations/0004_personal_puzzles.sql` (adds the `variant` and `generated` training kinds). Without it
 everything else keeps working; only these extras are skipped.
+
+## The AI coach
+
+Claude writes; the engine decides what is true. The browser builds a **facts packet** (`src/coach/facts.ts`) from the
+skill profile, recent mistakes, training results and puzzle stock, and `/api/coach` (`api/coach.ts`) asks Claude to turn
+it into:
+
+- a **coaching report**: headline, diagnosis, habits to break, and a 4-7 item plan whose actions are picked from a fixed list
+  (trainer, fix, theme puzzles, lessons, a game...). Anything else the model returns is dropped, so a plan item can never do
+  something the app does not support. Each plan item has a Go button that starts that exact activity;
+- a **debrief** after each training session, from the actual per-item results;
+- a **chat** about your own games, streamed.
+
+Guardrails: the model is told it cannot calculate chess and must not invent positions, moves or numbers; facts and chat text are
+treated as data, not instructions; output is validated (`api/_coach.ts`); one shared daily allowance (50 by default,
+`COACH_DAILY_LIMIT`) is counted only after a request is validated. The plan is saved in `progress.coach` (migration 0005) so it
+follows the user across devices, with a browser fallback if that column does not exist yet.
+
+`tests/coach.live.test.ts` runs the real prompts against the real model (costs a few cents; skipped unless asked):
+`RUN_AI_TESTS=1 node --env-file=.env.local node_modules/vitest/vitest.mjs run tests/coach.live.test.ts`.
+Note for anyone changing the model call: on Sonnet 5.5, hidden thinking is counted against `max_tokens`, so calls send
+`thinking: {type: "between_tools"}` and generous limits (`api/_anthropic.ts`).
 
 ## Architecture notes
 

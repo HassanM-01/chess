@@ -28,7 +28,7 @@ const TABS: [string, string, string][] = [
 ];
 
 /** Routes where the tab bar is hidden so sticky action bars never sit under it (spec 7, UX rule 2). */
-const SESSION_PATTERNS = ['/train/session', '/games/:id', '/games/:id/walk', '/learn/lesson/:id', '/learn/opening/:set', '/learn/opening/:set/:line'];
+const SESSION_PATTERNS = ['/coach/chat', '/train/session', '/games/:id', '/games/:id/walk', '/learn/lesson/:id', '/learn/opening/:set', '/learn/opening/:set/:line'];
 
 export function isSessionPath(pathname: string): boolean {
   return SESSION_PATTERNS.some((p) => matchPath({ path: p, end: true }, pathname));

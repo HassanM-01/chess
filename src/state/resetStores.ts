@@ -6,5 +6,5 @@ import { useSessionStore } from '@/features/train/sessionStore';
 export function resetUserStores(): void {
   usePlayStore.getState().set(null);
   useLondonStore.getState().set(null);
-  useSessionStore.setState({ items: [], options: { title: '' }, cursor: { idx: 0, score: 0, missed: [], finished: false } });
+  useSessionStore.setState({ items: [], options: { title: '' }, cursor: { idx: 0, score: 0, missed: [], finished: false, results: [] } });
 }

@@ -52,3 +52,15 @@ a.tab{text-decoration:none}
 .back{text-decoration:none}
 .lchips .lchip{white-space:nowrap}
 .play-title{font-size:22px}
+
+/* Coach chat */
+.chat{min-height:calc(100dvh - 24px)}
+.chat-log{display:flex;flex-direction:column;gap:10px;flex:1;padding-bottom:8px}
+.bubble{max-width:88%;padding:10px 14px;border-radius:16px;white-space:pre-wrap;line-height:1.45}
+.bubble.user{align-self:flex-end;background:var(--accent);color:var(--accent-ink);border-bottom-right-radius:4px}
+.bubble.assistant{align-self:flex-start;background:var(--surface);border:1px solid var(--line);border-bottom-left-radius:4px}
+.chat-input{display:flex;gap:8px;align-items:center}
+.chat-input input{flex:1}
+.chips{display:flex;flex-direction:column;gap:8px}
+.chips .btn{justify-content:flex-start;text-align:left}
+.debrief{white-space:pre-wrap}

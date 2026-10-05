@@ -6,7 +6,7 @@ import type { StoredEval } from '@/engine/types';
 
 export type GameSource = 'chesscom' | 'pgn' | 'bot' | 'london';
 export type AnalysisStatus = 'pending' | 'running' | 'done' | 'error' | 'skipped';
-export type TrainingKind = 'own_mistake' | 'threat' | 'judge' | 'punish';
+export type TrainingKind = 'own_mistake' | 'threat' | 'judge' | 'punish' | 'variant' | 'generated';
 export type ThemeKey = 'save' | 'free' | 'fork' | 'stopmate' | 'mate1' | 'mate2' | 'winmat';
 
 export interface ProfileSettings {
@@ -102,7 +102,7 @@ export interface PuzzleRow {
 
 // ---- training items ----------------------------------------------------------------------
 
-export type TrainingPool = 'own' | 'threat' | 'calm' | 'blunder' | 'safe' | 'punish';
+export type TrainingPool = 'own' | 'threat' | 'calm' | 'blunder' | 'safe' | 'punish' | 'gen';
 
 interface PayloadBase {
   pool: TrainingPool;
@@ -114,6 +114,10 @@ interface PayloadBase {
 }
 export interface OwnMistakePayload extends PayloadBase {
   pool: 'own';
+  /** set when this is a mirrored / colour-swapped copy of one of the user's real mistakes */
+  variant?: 'mirror' | 'swap' | 'both';
+  /** ply of the original mistake (for "See game") */
+  srcPly?: number;
   best: Uci;
   bestSan: string;
   san: string;
@@ -150,12 +154,26 @@ export interface PunishPayload extends PayloadBase {
   doneText: string;
   evBest: StoredEval;
 }
-export type TrainingPayload = OwnMistakePayload | ThreatPayload | JudgePayload | PunishPayload;
+/** A puzzle the app built for this user (self-play mining, verified by the engine to have one clear solution). */
+export interface GeneratedPayload extends PayloadBase {
+  pool: 'gen';
+  theme: ThemeKey;
+  /** solver move, reply, solver move ... */
+  moves: Uci[];
+  /** other accepted first moves (mate in one with several mates) */
+  alts?: Uci[];
+  explain: string;
+  rating: number;
+}
+export type TrainingPayload = OwnMistakePayload | ThreatPayload | JudgePayload | PunishPayload | GeneratedPayload;
 
 export interface TrainingItemDraft {
   kind: TrainingKind;
-  gameId: string;
+  /** null for generated puzzles, which belong to no game */
+  gameId: string | null;
   ply: number;
+  /** variants point at the mistake they were made from (so re-analysis removes them with it) */
+  srcPly?: number;
   mistakeId?: string | null;
   payload: TrainingPayload;
 }

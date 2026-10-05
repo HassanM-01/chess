@@ -140,6 +140,46 @@ test.describe('Phase 4: coach, walkthrough', () => {
   });
 });
 
+test.describe('Personal training: built from your own games', () => {
+  test('every mistake gets mirrored copies, and they are playable with an explanation that names the new squares', async () => {
+    const st = await localState(page);
+    const variants = st.training.filter((t) => t.kind === 'variant');
+    const own = st.training.filter((t) => t.kind === 'own_mistake');
+    expect(own.length).toBeGreaterThan(0);
+    expect(variants.length).toBeGreaterThanOrEqual(own.length);
+    expect(new Set(variants.map((v) => v.payload.variant))).toEqual(new Set(['mirror', 'swap', 'both']));
+  });
+
+  test('the Built for you card builds engine-verified puzzles from your games and shows them', async () => {
+    await page.goto('/train');
+    const card = page.getByTestId('factory');
+    await expect(card).toContainText('Built for you');
+    await expect(card).toContainText('mirrored copies of your own mistakes');
+    // the sync already started a background top-up; wait for it, then ask for more explicitly
+    await expect.poll(async () => (await localState(page)).training.filter((t) => t.payload.pool === 'gen').length, { timeout: 150_000 }).toBeGreaterThan(0);
+    const before = (await localState(page)).training.filter((t) => t.payload.pool === 'gen').length;
+    await expect(page.getByTestId('build-puzzles').or(page.getByTestId('factory-label'))).toBeVisible();
+    const gen = (await localState(page)).training.filter((t) => t.payload.pool === 'gen');
+    expect(gen.length).toBe(before);
+    for (const g of gen) {
+      expect(g.gameId).toBeNull();
+      expect(g.payload.moves?.length).toBeGreaterThan(0);
+      expect(g.payload.theme).toBeTruthy();
+    }
+    await expect(card).toContainText(/\d+ ready/);
+  });
+
+  test('a theme session serves personal puzzles first and labels them "Made for you"', async () => {
+    const st = await localState(page);
+    const theme = st.training.find((t) => t.payload.pool === 'gen')?.payload.theme as string;
+    expect(theme).toBeTruthy();
+    await page.goto('/train');
+    await page.getByTestId(`theme-${theme}`).click();
+    await expect(page.getByTestId('session')).toBeVisible();
+    await expect(page.getByText(/Made for you\./).first()).toBeVisible();
+  });
+});
+
 test.describe('Phase 5: training', () => {
   test('Spot the threat: tapping an enemy piece toasts and is not an answer; Next is visible without scrolling; a wrong answer is due again within 10 minutes', async () => {
     await page.goto('/train');
@@ -209,9 +249,11 @@ test.describe('Phase 5: training', () => {
 
     const solveCurrent = async (): Promise<void> => {
       const fen = (await board(page).getAttribute('data-fen')) as string;
-      const pz = PUZZLES.find((p) => p.fen === fen);
-      expect(pz, `puzzle for ${fen}`).toBeDefined();
-      const line = (pz as RawPuzzle).moves;
+      // a puzzle is either from the shared bank or one the app built for this user (stored in their training items)
+      const bank = PUZZLES.find((p) => p.fen === fen);
+      const personal = bank ? undefined : (await localState(page)).training.find((t) => t.payload.pool === 'gen' && t.payload.fen === fen);
+      expect(bank ?? personal, `puzzle for ${fen}`).toBeDefined();
+      const line = bank ? bank.moves : (personal?.payload.moves as string[]);
       await playUci(page, line[0]);
       for (let i = 2; i < line.length; i += 2) {
         await page.waitForTimeout(800); // the reply is played automatically

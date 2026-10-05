@@ -85,6 +85,24 @@ Node 22+ is required (`stockfish@18.0.8` is pinned on purpose: the spec's result
    (use a **separate test project**: the tests create and delete throwaway users).
 5. On iPhone: open the site in Safari, Share, **Add to Home Screen**.
 
+## Personal training (the "personal trainer" part)
+
+Chess correctness always comes from Stockfish, never from a language model. Three things are built *for the user*:
+
+1. **Same pattern, new look** (`src/puzzles/variants.ts`): every real mistake is also served mirrored left-right,
+   colour-swapped, and both. These are exact symmetries of chess, so the stored engine verdict carries over and the
+   explanation is re-derived for the new squares. No engine time needed; existing games are backfilled on load.
+2. **Puzzles mined from the user's own games** (`src/puzzles/mineRun.ts`): stored evals pre-filter the positions, so
+   only tactical moments get a deeper two-line engine check. Each kept puzzle has one clearly best idea, verified twice.
+3. **Self-play top-up** for themes the games cannot supply (ported from the prototype's `gen.js`).
+
+`src/puzzles/factory.ts` decides *what* to build from the skill profile (more of what the user is weakest at), runs in the
+background at low priority (interactive taps always win), and stores results as training items so they share spaced
+repetition. Sessions serve personal puzzles first (about 70% of a set) and fill the rest from the shared bank.
+
+Needs `supabase/migrations/0004_personal_puzzles.sql` (adds the `variant` and `generated` training kinds). Without it
+everything else keeps working; only these extras are skipped.
+
 ## Architecture notes
 
 - **All engine work runs in the browser** (single Web Worker, `stockfish-18-lite-single`, asm.js fallback). Interactive

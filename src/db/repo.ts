@@ -66,6 +66,8 @@ export interface Repo {
   listMistakes(): Promise<MistakeRow[]>;
 
   listTrainingItems(): Promise<TrainingItem[]>;
+  /** Insert training items that are not tied to an analysis run (generated puzzles, backfilled variants). Duplicates are skipped. */
+  addTrainingItems(items: TrainingItemDraft[]): Promise<number>;
   updateTrainingItem(id: string, patch: Partial<Pick<TrainingItem, 'box' | 'dueAt' | 'attempts' | 'correct' | 'lastResult'>>): Promise<void>;
 
   insertAttempt(a: NewAttempt): Promise<void>;

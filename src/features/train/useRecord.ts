@@ -47,6 +47,23 @@ export function useRecordAnswer() {
     [repo, qc, bumpDaily],
   );
 
+  /** A personal puzzle: counts like a bank puzzle (theme rating, accuracy) AND keeps its own spaced-repetition schedule. */
+  const recordGenerated = useCallback(
+    async (item: TrainingItem, puzzle: PuzzleRow, o: Outcome): Promise<void> => {
+      const ok = o.firstTry && !o.usedHint;
+      const sched = nextSchedule(item.box, ok);
+      await repo.updateTrainingItem(item.id, { box: sched.box, dueAt: sched.dueAt.toISOString(), attempts: item.attempts + 1, correct: item.correct + (ok ? 1 : 0), lastResult: ok });
+      const theme = puzzle.themes[0];
+      await repo.insertAttempt({ puzzleId: null, trainingItemId: item.id, theme, correct: o.firstTry, usedHint: o.usedHint, ms: o.ms });
+      const cur = (await repo.listThemeSkill()).find((t) => t.theme === theme);
+      const rating = updateThemeRating(cur?.rating ?? DEFAULT_THEME_RATING, puzzle.rating, o.firstTry, o.usedHint);
+      await repo.upsertThemeSkill({ theme, rating, attempts: (cur?.attempts ?? 0) + 1 });
+      await bumpDaily('puzzles');
+      void qc.invalidateQueries({ queryKey: [repo.userId] });
+    },
+    [repo, qc, bumpDaily],
+  );
+
   const recordItem = useCallback(
     async (item: TrainingItem, o: Outcome, field: 'puzzles' | 'drills'): Promise<void> => {
       const ok = o.firstTry && !o.usedHint;
@@ -71,5 +88,5 @@ export function useRecordAnswer() {
     [updateProgress],
   );
 
-  return { recordPuzzle, recordItem, markTrainerDone };
+  return { recordPuzzle, recordGenerated, recordItem, markTrainerDone };
 }

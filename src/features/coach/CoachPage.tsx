@@ -77,7 +77,7 @@ export function CoachPage(): JSX.Element {
   const accs = useMemo(() => {
     const by = new Map<string, { n: number; ok: number }>();
     for (const a of attempts) {
-      if (!a.puzzleId || !a.theme || !(a.theme in THEMES)) continue;
+      if (!a.theme || !(a.theme in THEMES)) continue; // bank puzzles and personal puzzles both count
       const e = by.get(a.theme) ?? { n: 0, ok: 0 };
       e.n++;
       if (a.correct && !a.usedHint) e.ok++;

@@ -100,7 +100,7 @@ function Runner(): JSX.Element {
   const cursor = useSessionStore((s) => s.cursor);
   const setCursor = useSessionStore((s) => s.setCursor);
   const startSession = useSessionStore((s) => s.start);
-  const { recordPuzzle, recordItem, markTrainerDone } = useRecordAnswer();
+  const { recordPuzzle, recordGenerated, recordItem, markTrainerDone } = useRecordAnswer();
 
   const [, force] = useReducer((x: number) => x + 1, 0);
   const st = useRef<ItemState>(initialState(items[Math.min(cursor.idx, items.length - 1)]));
@@ -138,11 +138,13 @@ function Runner(): JSX.Element {
       setCursor(ok ? { score: cur.score + 1 } : { missed: [...cur.missed, it] });
       const rec =
         it.kind === 'puz'
-          ? recordPuzzle(it.puzzle, outcome)
+          ? it.item
+            ? recordGenerated(it.item, it.puzzle, outcome)
+            : recordPuzzle(it.puzzle, outcome)
           : recordItem(it.item, outcome, it.kind === 'drill' ? 'drills' : 'puzzles');
       void rec.catch((e) => console.warn('could not save answer', e));
     },
-    [it, recordPuzzle, recordItem, setCursor],
+    [it, recordPuzzle, recordGenerated, recordItem, setCursor],
   );
 
   // ---- move-finding items (puzzles + drills) -----------------------------------------------
@@ -157,7 +159,7 @@ function Runner(): JSX.Element {
       else if (it.kind === 'drill') {
         const p = it.payload;
         if (p.pool === 'punish') expl = (alsoGood ? `Your move works too. The engine's top choice was ${p.bestSan}. ` : '') + p.doneText;
-        else expl = `${alsoGood ? `The engine's top choice was ${p.bestSan}, but your move works too.` : `${p.bestSan} is the move.`} In the game you played ${p.san}: ${p.text}`;
+        else expl = `${alsoGood ? `The engine's top choice was ${p.bestSan}, but your move works too.` : `${p.bestSan} is the move.`} ${p.variant ? `The tempting ${p.san} fails here` : `In the game you played ${p.san}`}: ${p.text}`;
       }
       patch({ fb: { tone: ok ? 'good' : 'warn', title: ok ? (alsoGood ? 'Also good!' : 'Correct!') : 'Solved, with help', text: expl } });
     },
@@ -197,7 +199,7 @@ function Runner(): JSX.Element {
         const tries = s.tries + 1;
         let why = 'Not this one. Look again: what is attacked, and what is undefended?';
         if (it.kind === 'drill' && u === it.payload.uci) {
-          why = it.payload.pool === 'punish' ? "That's what you played in the game. Look for something that wins material." : `That's the move you played in the game. ${it.payload.text}`;
+          why = it.payload.pool === 'punish' ? "That's what you played in the game. Look for something that wins material." : `${it.payload.variant ? "That's the tempting move, and it fails." : "That's the move you played in the game."} ${it.payload.text}`;
         }
         patch({ tries, firstTry: false, fen: s.fen, lastMove: lastMoveOf(it), interactive: true, arrows: [], busy: false, fb: { tone: 'bad', title: 'Try again', text: why } });
         if (tries >= 2 && !st.current.revealed) patch({ arrows: arrowsOf(arrowOf(exp, 'good')) });
@@ -234,7 +236,7 @@ function Runner(): JSX.Element {
       }
       let why = '';
       if (it.kind === 'puz') why = it.puzzle.explanation ?? '';
-      else if (it.kind === 'drill') why = it.payload.pool === 'punish' ? it.payload.doneText : `In the game you played ${it.payload.san}. ${it.payload.text}`;
+      else if (it.kind === 'drill') why = it.payload.pool === 'punish' ? it.payload.doneText : `${it.payload.variant ? `The tempting ${it.payload.san} fails` : `In the game you played ${it.payload.san}`}. ${it.payload.text}`;
       patch({
         ...base,
         revealed: true,
@@ -360,9 +362,12 @@ function Runner(): JSX.Element {
   if (it.kind === 'puz') {
     prompt = `${colorName(me)} to move.`;
     sub = options.hideTheme ? 'Find the best move.' : (THEMES[it.puzzle.themes[0]]?.prompt ?? 'Find the best move.');
+    if (it.item) sub = `Made for you. ${sub}`;
   } else if (it.kind === 'drill') {
     prompt = `${colorName(me)} to move.`;
-    sub = it.payload.pool === 'punish' ? it.payload.sub : `From your game vs ${opp}. You played ${it.payload.san} here. Find something better.`;
+    sub = it.payload.pool === 'punish' ? it.payload.sub : it.payload.variant
+          ? `Same pattern as a mistake you made against ${opp}, new look. ${it.payload.san} is the tempting move. Find something better.`
+          : `From your game vs ${opp}. You played ${it.payload.san} here. Find something better.`;
   } else if (it.kind === 'threat') {
     prompt = `They just played ${it.payload.lastSan}. What's in danger?`;
     sub = `From your game vs ${opp}. Tap your piece that could be lost. If nothing is in danger, tap the button.`;
@@ -407,7 +412,7 @@ function Runner(): JSX.Element {
         {s.solved ? (
           <>
             {it.kind === 'drill' && it.payload.pool === 'own' && (
-              <button className="btn" onClick={() => nav(`/games/${it.item.gameId}?ply=${it.item.ply ?? 0}`)}>
+              <button className="btn" onClick={() => nav(`/games/${it.item.gameId}?ply=${(it.payload as { srcPly?: number }).srcPly ?? it.item.ply ?? 0}`)}>
                 See game
               </button>
             )}

@@ -3,12 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import type { ThemeKey } from '@/db/types';
 import { THEMES } from '@/content/themes';
 import { pickPuzzles } from '@/skill/pickPuzzles';
-import { buildTrainerSession, dueOwn, type TrainerMode } from '@/skill/sessionBuilder';
+import { buildTrainerSession, dueOwn, pickGenerated, type TrainerMode } from '@/skill/sessionBuilder';
 import { useRepo } from '@/state/auth';
-import { useSkillProfile, useTrainingItems } from '@/state/queries';
+import { useSkillProfile, useThemeSkill, useTrainingItems } from '@/state/queries';
 import { toast } from '@/state/toast';
 import { useSessionStore } from './sessionStore';
-import { puzzleItem, toSessionItem, type SessionOptions } from './types';
+import { genToSessionItem, puzzleItem, toSessionItem, type SessionOptions } from './types';
 
 const TRAINER_TITLES: Record<TrainerMode, string> = {
   threat: 'Spot the threat',
@@ -25,15 +25,20 @@ export function useStartSession() {
   const start = useSessionStore((s) => s.start);
   const { data: training = [] } = useTrainingItems();
   const { data: skill } = useSkillProfile();
+  const { data: themeSkill = [] } = useThemeSkill();
 
   const startPuzzles = useCallback(
     async (o: { theme: ThemeKey | 'mix'; n: number; title?: string; onDone?: SessionOptions['onDone']; returnTo?: string }): Promise<void> => {
-      const puzzles = await pickPuzzles(repo, { theme: o.theme, n: o.n, themeWeights: skill?.themeWeights ?? null });
-      if (!puzzles.length) {
+      // Personal puzzles first (about 70% of the set when there are enough); the shared bank fills the rest.
+      const ratings = Object.fromEntries(themeSkill.map((t) => [t.theme, t.rating]));
+      const mine = pickGenerated(training, o.theme, Math.ceil(o.n * 0.7), { weights: skill?.themeWeights ?? null, ratings });
+      const bank = o.n - mine.length > 0 ? await pickPuzzles(repo, { theme: o.theme, n: o.n - mine.length, themeWeights: skill?.themeWeights ?? null }) : [];
+      const items = [...mine.map(genToSessionItem), ...bank.map(puzzleItem)]; // personal first
+      if (!items.length) {
         toast('No puzzles for that theme yet.');
         return;
       }
-      start(puzzles.map(puzzleItem), {
+      start(items, {
         title: o.title ?? (o.theme === 'mix' ? 'Daily mix' : THEMES[o.theme].name),
         hideTheme: o.theme === 'mix',
         onDone: o.onDone,
@@ -41,7 +46,7 @@ export function useStartSession() {
       });
       nav('/train/session');
     },
-    [repo, skill, start, nav],
+    [repo, skill, training, themeSkill, start, nav],
   );
 
   const startTrainer = useCallback(

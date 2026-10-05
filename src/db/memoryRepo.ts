@@ -207,7 +207,7 @@ export function createMemoryRepo(opts: MemoryRepoOptions = {}): Repo & { _state:
         return { ...m, id, userId, gameId: input.gameId, playedAt: game.playedAt, createdAt: nowIso() };
       });
       st.mistakes.push(...rows);
-      st.training = st.training.filter((t) => !(t.gameId === input.gameId && t.kind === 'own_mistake'));
+      st.training = st.training.filter((t) => !(t.gameId === input.gameId && (t.kind === 'own_mistake' || t.kind === 'variant')));
       for (const d of input.trainingItems) {
         const exists = st.training.some((t) => t.kind === d.kind && t.gameId === d.gameId && t.ply === d.ply);
         if (exists) continue;
@@ -215,7 +215,7 @@ export function createMemoryRepo(opts: MemoryRepoOptions = {}): Repo & { _state:
           id: uuid(),
           userId,
           kind: d.kind,
-          mistakeId: d.kind === 'own_mistake' ? (byPly.get(d.ply) ?? null) : null,
+          mistakeId: d.kind === 'own_mistake' || d.kind === 'variant' ? (byPly.get(d.srcPly ?? d.ply) ?? null) : null,
           gameId: d.gameId,
           ply: d.ply,
           payload: d.payload,
@@ -238,6 +238,33 @@ export function createMemoryRepo(opts: MemoryRepoOptions = {}): Repo & { _state:
 
     async listTrainingItems() {
       return clone(st.training);
+    },
+    async addTrainingItems(items) {
+      let n = 0;
+      const mistakeByPly = new Map(st.mistakes.map((m) => [`${m.gameId}:${m.ply}`, m.id]));
+      for (const d of items) {
+        // generated puzzles belong to no game, so dedupe them by position instead
+        const dup = st.training.some((t) => (d.gameId == null ? t.kind === d.kind && t.payload.fen === d.payload.fen : t.kind === d.kind && t.gameId === d.gameId && t.ply === d.ply));
+        if (dup) continue;
+        st.training.push({
+          id: uuid(),
+          userId,
+          kind: d.kind,
+          mistakeId: d.gameId && d.srcPly != null ? (mistakeByPly.get(`${d.gameId}:${d.srcPly}`) ?? null) : null,
+          gameId: d.gameId,
+          ply: d.ply,
+          payload: d.payload,
+          box: 0,
+          dueAt: nowIso(),
+          attempts: 0,
+          correct: 0,
+          lastResult: null,
+          createdAt: nowIso(),
+        });
+        n++;
+      }
+      if (n) save();
+      return n;
     },
     async updateTrainingItem(id, patch) {
       const t = st.training.find((x) => x.id === id);

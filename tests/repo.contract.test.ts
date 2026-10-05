@@ -4,7 +4,7 @@ import type { MistakeDraft } from '@/analysis/types';
 import { createMemoryRepo } from '@/db/memoryRepo';
 import type { Repo } from '@/db/repo';
 import { createSupabaseRepo } from '@/db/supabaseRepo';
-import type { NewGame, PuzzleRow, TrainingItemDraft } from '@/db/types';
+import type { NewGame, OwnMistakePayload, PuzzleRow, TrainingItemDraft } from '@/db/types';
 import { admin, createTestUser, deleteTestUser, hasSupabase, type TestUser } from './helpers/supabaseEnv';
 
 const game = (ext: string, extra: Partial<NewGame> = {}): NewGame => ({
@@ -212,6 +212,40 @@ function contract(name: string, make: () => Promise<{ repo: Repo; cleanup?: () =
       const got = await repo.getPuzzles(['contract_c', 'nope']);
       expect(got).toHaveLength(1);
       expect(got[0]).toMatchObject({ id: 'contract_c', themes: ['fork'], rating: 700, moves: ['a1a2'], lastMove: 'h2h1' });
+    });
+
+    it('personal puzzles: generated items belong to no game and are deduplicated by position; variants follow their mistake', async () => {
+      const gen = (fen: string, ply: number): TrainingItemDraft => ({
+        kind: 'generated',
+        gameId: null,
+        ply,
+        payload: { pool: 'gen', theme: 'fork', fen, me: 'w', lastMove: null, opponent: '', moves: ['a1a2'], explain: 'x', rating: 700 },
+      });
+      const fen = '8/8/8/8/8/8/8/K6k w - - 0 1';
+      expect(await repo.addTrainingItems([gen(fen, 11), gen('8/8/8/8/8/8/8/K5k1 w - - 0 1', 12)])).toBe(2);
+      expect(await repo.addTrainingItems([gen(fen, 13)])).toBe(0); // same position: skipped
+      const g = (await repo.listTrainingItems()).filter((t) => t.kind === 'generated');
+      expect(g).toHaveLength(2);
+      expect(g.every((t) => t.gameId === null && t.mistakeId === null)).toBe(true);
+
+      // variants are linked to the mistake they were made from, and removed with it on re-analysis
+      const [vg] = await repo.insertGames([game('variant-src')]);
+      const saved = await repo.saveAnalysis({
+        gameId: vg.id,
+        engine: 't',
+        depth: 1,
+        evals: [[0, null, null]],
+        summary: { castled_move: null, early_queen: false, eval_after_10: null, how_ended: 'other', outcome: null, counts: { best: 0, good: 0, inacc: 0, mistake: 0, blunder: 0 } },
+        mistakes: [mistake(2)],
+        trainingItems: [
+          ...items(vg.id),
+          { kind: 'variant', gameId: vg.id, ply: 1002, srcPly: 2, payload: { ...(items(vg.id)[0].payload as OwnMistakePayload), variant: 'mirror', srcPly: 2 } },
+        ],
+      });
+      const variant = (await repo.listTrainingItems()).find((t) => t.kind === 'variant' && t.gameId === vg.id);
+      expect(variant?.mistakeId).toBe(saved[0].id);
+      await repo.saveAnalysis({ gameId: vg.id, engine: 't', depth: 1, evals: [[0, null, null]], summary: (await repo.getAnalysis(vg.id))!.summary, mistakes: [], trainingItems: [] });
+      expect((await repo.listTrainingItems()).some((t) => t.kind === 'variant' && t.gameId === vg.id)).toBe(false);
     });
 
     it('deleteGame removes the game and everything that hangs off it', async () => {

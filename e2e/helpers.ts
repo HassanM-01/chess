@@ -116,7 +116,7 @@ export interface LocalState {
   games: { id: string; white: string; black: string; playedAt: string; analysisStatus: string; movesUci: string[]; userColor: string }[];
   analyses: { gameId: string; evals: [number, number | null, string | null][] }[];
   mistakes: { gameId: string; ply: number; category: string; severity: string }[];
-  training: { id: string; kind: string; box: number; dueAt: string; attempts: number; payload: { pool: string; fen: string; answer?: string[]; verdict?: string } }[];
+  training: { id: string; kind: string; box: number; dueAt: string; attempts: number; kind_?: never; gameId: string | null; payload: { pool: string; fen: string; answer?: string[]; verdict?: string; moves?: string[]; theme?: string; variant?: string } }[];
   attempts: { correct: boolean; usedHint: boolean; theme: string | null }[];
   profile: { chesscomUsername: string | null; lastSyncedAt: string | null };
   progress: { daily: Record<string, unknown>; lessons: Record<string, boolean>; openings: Record<string, number>; play: Record<string, unknown> };

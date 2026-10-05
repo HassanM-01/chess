@@ -1,5 +1,5 @@
 // Chooses which training items go into a game-trainer session (spec 6.5 / 6.6).
-import type { TrainingItem, TrainingPool } from '@/db/types';
+import type { GeneratedPayload, ThemeKey, TrainingItem, TrainingPool } from '@/db/types';
 import { isDue } from './leitner';
 import { shuffle, type Rng } from './pickPuzzles';
 
@@ -8,7 +8,7 @@ export const MIX_SIZE = 15;
 export type TrainerMode = 'threat' | 'judge' | 'punish' | 'mix' | 'fix';
 
 export function poolsOf(items: TrainingItem[]): Record<TrainingPool, TrainingItem[]> {
-  const out: Record<TrainingPool, TrainingItem[]> = { own: [], threat: [], calm: [], blunder: [], safe: [], punish: [] };
+  const out: Record<TrainingPool, TrainingItem[]> = { own: [], threat: [], calm: [], blunder: [], safe: [], punish: [], gen: [] };
   for (const it of items) out[it.payload.pool].push(it);
   return out;
 }
@@ -63,4 +63,52 @@ export function buildTrainerSession(items: TrainingItem[], mode: TrainerMode, no
       return shuffle(picked, rng);
     }
   }
+}
+
+/**
+ * Personal (generated) puzzles for a puzzle session. Unseen and due ones first; for the daily mix the themes are drawn in
+ * proportion to the user's weaknesses, and within a theme the puzzles closest to the user's level come first.
+ */
+export function pickGenerated(
+  items: TrainingItem[],
+  theme: ThemeKey | 'mix',
+  n: number,
+  opts: { weights?: Record<ThemeKey, number> | null; ratings?: Partial<Record<string, number>>; now?: Date; rng?: Rng } = {},
+): TrainingItem[] {
+  const rng = opts.rng ?? Math.random;
+  const now = opts.now ?? new Date();
+  const pool = items.filter((i) => i.payload.pool === 'gen' && (theme === 'mix' || i.payload.theme === theme) && isDue(i.dueAt, now));
+  const buckets = new Map<ThemeKey, TrainingItem[]>();
+  for (const it of pool) {
+    const t = (it.payload as GeneratedPayload).theme;
+    buckets.set(t, [...(buckets.get(t) ?? []), it]);
+  }
+  for (const [t, list] of buckets) {
+    const skill = opts.ratings?.[t] ?? 800;
+    buckets.set(
+      t,
+      list
+        .map((i) => ({ i, k: (i.attempts > 0 ? 1000 : 0) + Math.abs((i.payload as GeneratedPayload).rating - skill) + rng() * 60 }))
+        .sort((a, b) => a.k - b.k)
+        .map((x) => x.i),
+    );
+  }
+  const out: TrainingItem[] = [];
+  while (out.length < n && buckets.size) {
+    const keys = [...buckets.keys()];
+    const w = keys.map((k) => (theme === 'mix' ? (opts.weights?.[k] ?? 1) : 1));
+    let x = rng() * w.reduce((a, b) => a + b, 0);
+    let pick = keys[keys.length - 1];
+    for (let i = 0; i < keys.length; i++) {
+      x -= w[i];
+      if (x <= 0) {
+        pick = keys[i];
+        break;
+      }
+    }
+    const list = buckets.get(pick) as TrainingItem[];
+    out.push(list.shift() as TrainingItem);
+    if (!list.length) buckets.delete(pick);
+  }
+  return out;
 }

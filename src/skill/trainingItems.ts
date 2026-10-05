@@ -8,6 +8,7 @@ import type { Color } from '@/chess/types';
 import type { StoredEval } from '@/engine/types';
 import { fromStored, toStored } from '@/engine/types';
 import { wpFor } from '@/engine/winprob';
+import { generateVariantItems } from '@/puzzles/variants';
 import type { JudgePayload, OwnMistakePayload, PunishPayload, ThreatPayload, TrainingItemDraft } from '@/db/types';
 
 /** pick `n` items spread evenly across the list (deterministic) */
@@ -148,8 +149,11 @@ export function generateTrainingItems(
     own.push({ kind: 'own_mistake', gameId, ply: m.ply, payload });
   }
 
+  // Extra practice: mirrored / colour-swapped copies of each real mistake (no engine needed).
+  const variants = generateVariantItems(game, evals, mistakes, { gameId, opponent });
+
   // Balance the pools: ~1 calm per 4 threats, safe moves about as many as blunders.
   const calmQuota = Math.max(1, Math.ceil(threats.length / 4));
   const safeQuota = Math.max(2, blunders.length);
-  return [...own, ...threats, ...spread(calms, calmQuota), ...blunders, ...spread(safes, safeQuota), ...punishes];
+  return [...own, ...variants, ...threats, ...spread(calms, calmQuota), ...blunders, ...spread(safes, safeQuota), ...punishes];
 }

@@ -7,6 +7,8 @@ import { syncChesscomGames } from '@/chesscom/sync';
 import type { Repo } from '@/db/repo';
 import { getEngine } from '@/engine/browser';
 import { makeEvaluator, type Evaluator } from '@/engine/evalPos';
+import { backfillVariants } from '@/puzzles/backfill';
+import { PuzzleFactory, type FactoryState } from '@/puzzles/factory';
 import { snapshotSkillProfile } from '@/skill/profileData';
 import { useRepo } from './auth';
 import { invalidateAll } from './queries';
@@ -30,8 +32,13 @@ const IDLE: SyncState = { phase: 'idle', label: '', fraction: 0, error: null, ga
 export class SyncController {
   state: SyncState = IDLE;
   readonly queue: AnalysisQueue;
+  /** builds personal puzzles from the user's games and weaknesses */
+  readonly factory: PuzzleFactory;
   private listeners = new Set<() => void>();
   private busy: Promise<void> | null = null;
+  get qcRef(): QueryClient {
+    return this.qc;
+  }
 
   constructor(
     private repo: Repo,
@@ -40,6 +47,7 @@ export class SyncController {
     evalPos: Evaluator = makeEvaluator(getEngine()),
   ) {
     this.queue = new AnalysisQueue(repo, evalPos);
+    this.factory = new PuzzleFactory(repo, getEngine(), qc);
     let lastDone = 0;
     this.queue.subscribe(() => {
       const q = this.queue.state;
@@ -136,6 +144,8 @@ export class SyncController {
     }
     await invalidateAll(this.qc, this.repo.userId);
     if (this.state.phase !== 'error') this.set({ phase: 'idle', label: '', fraction: 0, game: '' });
+    // New games mean new habits: top up the personal puzzle stock in the background (a short run; the Train screen can do more).
+    if (analyzed > 0) void this.factory.build({ maxMs: 90_000 });
     if (quiet && analyzed === 0) return;
     if (analyzed > 0) toast(`${analyzed} new game${analyzed === 1 ? '' : 's'} analyzed. Your coach report is updated.`);
     else if (newGames === 0 && this.state.phase !== 'error') toast("No new games. You're up to date.");
@@ -156,6 +166,7 @@ export function SyncProvider({ children }: { children: ReactNode }): JSX.Element
         .listGames()
         .then((gs) => {
           if (gs.some((g) => g.analysisStatus === 'pending' || g.analysisStatus === 'running')) void controller.analyzePending(true);
+          else void backfillVariants(repo).then((n) => { if (n) void invalidateAll(controller.qcRef, repo.userId); });
         })
         .catch(() => undefined);
     }, 1500);
@@ -178,6 +189,11 @@ export function useSyncController(): SyncController {
   const c = useContext(SyncContext);
   if (!c) throw new Error('useSyncController must be used inside <SyncProvider>');
   return c;
+}
+
+export function useFactoryState(): FactoryState {
+  const f = useSyncController().factory;
+  return useSyncExternalStore(f.subscribe, f.getState, f.getState);
 }
 
 export function useSyncState(): SyncState {

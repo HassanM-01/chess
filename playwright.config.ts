@@ -30,7 +30,9 @@ export default defineConfig({
     },
   ],
   webServer: {
+    // Blank Supabase variables win over .env.local, so the suite always runs in local mode (no real Supabase, no real accounts).
     command: `npm run build && npx vite preview --port ${PORT} --strictPort`,
+    env: { VITE_SUPABASE_URL: '', VITE_SUPABASE_ANON_KEY: '' },
     url: `http://localhost:${PORT}`,
     reuseExistingServer: !process.env.CI,
     timeout: 180_000,

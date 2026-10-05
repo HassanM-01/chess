@@ -405,7 +405,7 @@ export function createSupabaseRepo(sb: SupabaseClient, userId: string): Repo {
         ).select('game_id'),
       );
       // Re-analysis replaces mistakes and their own_mistake training items (also those whose mistake link was null).
-      ok(await sb.from('training_items').delete().eq('game_id', input.gameId).eq('user_id', userId).eq('kind', 'own_mistake').select('id'));
+      ok(await sb.from('training_items').delete().eq('game_id', input.gameId).eq('user_id', userId).in('kind', ['own_mistake', 'variant']).select('id'));
       ok(await sb.from('mistakes').delete().eq('game_id', input.gameId).eq('user_id', userId).select('id'));
       let mistakes: MistakeRow[] = [];
       if (input.mistakes.length) {
@@ -432,18 +432,26 @@ export function createSupabaseRepo(sb: SupabaseClient, userId: string): Repo {
         mistakes = (ok(await sb.from('mistakes').insert(rows).select('*')) as MistakeDb[]).map(mapMistake);
       }
       const idByPly = new Map(mistakes.map((m) => [m.ply, m.id]));
-      if (input.trainingItems.length) {
-        const rows = input.trainingItems.map((t) => ({
-          user_id: userId,
-          kind: t.kind,
-          game_id: t.gameId,
-          ply: t.ply,
-          mistake_id: t.kind === 'own_mistake' ? (idByPly.get(t.ply) ?? null) : null,
-          payload: t.payload,
-        }));
-        for (const part of chunk(rows, 100)) {
+      const toRow = (t: (typeof input.trainingItems)[number]): Record<string, unknown> => ({
+        user_id: userId,
+        kind: t.kind,
+        game_id: t.gameId,
+        ply: t.ply,
+        mistake_id: t.kind === 'own_mistake' || t.kind === 'variant' ? (idByPly.get(t.srcPly ?? t.ply) ?? null) : null,
+        payload: t.payload,
+      });
+      const core = input.trainingItems.filter((t) => t.kind !== 'variant').map(toRow);
+      const variants = input.trainingItems.filter((t) => t.kind === 'variant').map(toRow);
+      for (const part of chunk(core, 100)) {
+        ok(await sb.from('training_items').upsert(part, { onConflict: 'user_id,kind,game_id,ply', ignoreDuplicates: true }).select('id'));
+      }
+      // Extra "same pattern, new look" practice must never block saving the analysis itself (e.g. the 0004 migration is not applied yet).
+      try {
+        for (const part of chunk(variants, 100)) {
           ok(await sb.from('training_items').upsert(part, { onConflict: 'user_id,kind,game_id,ply', ignoreDuplicates: true }).select('id'));
         }
+      } catch (e) {
+        console.warn('could not save practice variants', e);
       }
       ok(await sb.from('games').update({ analysis_status: 'done' }).eq('id', input.gameId).eq('user_id', userId).select('id'));
       return mistakes;
@@ -457,6 +465,29 @@ export function createSupabaseRepo(sb: SupabaseClient, userId: string): Repo {
     async listTrainingItems() {
       const rows = await selectAll<TrainingDb>('training_items', (q) => q.select('*').eq('user_id', userId).order('id'));
       return rows.map(mapTraining);
+    },
+    async addTrainingItems(items) {
+      if (!items.length) return 0;
+      const existing = new Set<string>();
+      const have = await selectAll<{ kind: string; game_id: string | null; ply: number | null; payload: { fen?: string } }>('training_items', (q) => q.select('kind,game_id,ply,payload').eq('user_id', userId).in('kind', ['variant', 'generated']).order('id'));
+      for (const h of have) existing.add(h.game_id == null ? `${h.kind}|${h.payload.fen}` : `${h.kind}|${h.game_id}|${h.ply}`);
+      const fresh = items.filter((t) => !existing.has(t.gameId == null ? `${t.kind}|${t.payload.fen}` : `${t.kind}|${t.gameId}|${t.ply}`));
+      if (!fresh.length) return 0;
+      const mistakes = await selectAll<{ id: string; game_id: string; ply: number }>('mistakes', (q) => q.select('id,game_id,ply').eq('user_id', userId).order('id'));
+      const mid = new Map(mistakes.map((m) => [`${m.game_id}:${m.ply}`, m.id]));
+      const rows = fresh.map((t) => ({
+        user_id: userId,
+        kind: t.kind,
+        game_id: t.gameId,
+        ply: t.ply,
+        mistake_id: t.gameId && t.srcPly != null ? (mid.get(`${t.gameId}:${t.srcPly}`) ?? null) : null,
+        payload: t.payload,
+      }));
+      let n = 0;
+      for (const part of chunk(rows, 100)) {
+        n += (ok(await sb.from('training_items').upsert(part, { onConflict: 'user_id,kind,game_id,ply', ignoreDuplicates: true }).select('id')) as unknown[]).length;
+      }
+      return n;
     },
     async updateTrainingItem(id, patch) {
       const row: Record<string, unknown> = {};

@@ -2,6 +2,9 @@ import { useMemo } from 'react';
 import { Hero, Pill } from '@/components/ui';
 import { THEMES, THEME_KEYS } from '@/content/themes';
 import { trainerCounts } from '@/skill/sessionBuilder';
+import { useFactoryState, useSyncController } from '@/state/sync';
+import { THEMES as THEME_INFO } from '@/content/themes';
+import type { GeneratedPayload } from '@/db/types';
 import { useAttempts, useGames, usePuzzleCounts, useTrainingItems } from '@/state/queries';
 import { useStartSession } from './useStartSession';
 
@@ -11,6 +14,24 @@ export function TrainPage(): JSX.Element {
   const { data: attempts = [] } = useAttempts();
   const { data: counts = {} } = usePuzzleCounts();
   const { startPuzzles, startTrainer, startFix } = useStartSession();
+  const controller = useSyncController();
+  const factory = useFactoryState();
+
+  const personal = useMemo(() => {
+    const byTheme = new Map<string, number>();
+    let ready = 0;
+    let variants = 0;
+    for (const t of training) {
+      if (t.payload.pool === 'gen') {
+        if (t.attempts === 0) {
+          ready++;
+          const th = (t.payload as GeneratedPayload).theme;
+          byTheme.set(th, (byTheme.get(th) ?? 0) + 1);
+        }
+      } else if (t.kind === 'variant') variants++;
+    }
+    return { ready, variants, byTheme };
+  }, [training]);
 
   const analyzed = games.filter((g) => g.analysisStatus === 'done' && g.userColor).length;
   const tc = useMemo(() => trainerCounts(training), [training]);
@@ -68,6 +89,41 @@ export function TrainPage(): JSX.Element {
             <span className="small">{`${tc.fixDue} due · ${tc.fix} total`}</span>
           </button>
         </div>
+      </div>
+
+      <div className="card stack" data-testid="factory">
+        <div className="spread">
+          <h2>Built for you</h2>
+          <Pill tone="acc">{`${personal.ready} ready`}</Pill>
+        </div>
+        <p className="muted small">
+          These puzzles are made from your own games and aimed at your weak spots, not taken from a list.
+          {personal.variants > 0 ? ` Plus ${personal.variants} mirrored copies of your own mistakes, so you learn the pattern and not the board.` : ''}
+        </p>
+        {personal.byTheme.size > 0 && (
+          <div className="row">
+            {[...personal.byTheme.entries()].map(([k, n]) => (
+              <Pill key={k}>{`${THEME_INFO[k as keyof typeof THEME_INFO]?.name ?? k} · ${n}`}</Pill>
+            ))}
+          </div>
+        )}
+        {factory.phase === 'running' ? (
+          <div className="stack-s">
+            <div className="small" data-testid="factory-label">{factory.label || 'Working…'}</div>
+            <p className="small muted">The engine is working on your device. You can keep using the app.</p>
+            <button className="btn" onClick={() => controller.factory.cancel()}>
+              Stop
+            </button>
+          </div>
+        ) : (
+          <>
+            {factory.phase === 'error' && factory.error && <p className="err" role="alert">{factory.error}</p>}
+            {factory.phase === 'done' && factory.label && <p className="small">{factory.label}</p>}
+            <button className="btn" disabled={!analyzed} onClick={() => void controller.factory.build({ maxMs: 240_000 })} data-testid="build-puzzles">
+              {analyzed ? 'Build more puzzles for me' : 'Pull and analyze games first'}
+            </button>
+          </>
+        )}
       </div>
 
       <div className="card stack-s">

@@ -1,8 +1,9 @@
-import type { JudgePayload, OwnMistakePayload, PunishPayload, PuzzleRow, ThreatPayload, TrainingItem } from '@/db/types';
+import type { GeneratedPayload, JudgePayload, OwnMistakePayload, PunishPayload, PuzzleRow, ThreatPayload, TrainingItem } from '@/db/types';
 
 /** One thing to solve in a session. */
 export type SessionItem =
-  | { kind: 'puz'; id: string; puzzle: PuzzleRow }
+  /** a puzzle; `item` is set when it is a personal (generated) puzzle that has its own spaced-repetition schedule */
+  | { kind: 'puz'; id: string; puzzle: PuzzleRow; item?: TrainingItem }
   | { kind: 'drill'; id: string; item: TrainingItem; payload: OwnMistakePayload | PunishPayload }
   | { kind: 'threat'; id: string; item: TrainingItem; payload: ThreatPayload }
   | { kind: 'judge'; id: string; item: TrainingItem; payload: JudgePayload };
@@ -27,3 +28,14 @@ export function toSessionItem(ti: TrainingItem): SessionItem {
 }
 
 export const puzzleItem = (puzzle: PuzzleRow): SessionItem => ({ kind: 'puz', id: puzzle.id, puzzle });
+
+/** A personal puzzle, shaped like a bank puzzle so the runner treats them the same way. */
+export function genToSessionItem(ti: TrainingItem): SessionItem {
+  const p = ti.payload as GeneratedPayload;
+  return {
+    kind: 'puz',
+    id: ti.id,
+    item: ti,
+    puzzle: { id: ti.id, fen: p.fen, moves: p.moves, themes: [p.theme], rating: p.rating, explanation: p.explain, source: 'personal', lastMove: p.lastMove, alts: p.alts },
+  };
+}

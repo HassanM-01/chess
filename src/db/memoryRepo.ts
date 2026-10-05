@@ -75,6 +75,10 @@ export function createMemoryRepo(opts: MemoryRepoOptions = {}): Repo & { _state:
   }
   let timer: ReturnType<typeof setTimeout> | undefined;
   const flush = (): void => {
+    if (timer) {
+      clearTimeout(timer);
+      timer = undefined;
+    }
     if (!storage) return;
     try {
       storage.setItem(key, JSON.stringify(st));
@@ -84,9 +88,18 @@ export function createMemoryRepo(opts: MemoryRepoOptions = {}): Repo & { _state:
   };
   const save = (): void => {
     if (!storage) return;
-    clearTimeout(timer);
-    timer = setTimeout(flush, 250);
+    // Throttle, not debounce: the first change starts a short timer and later changes ride along. A debounce that restarts
+    // on every write can be postponed forever by steady background work, and would lose a change made right before a reload.
+    if (!timer) timer = setTimeout(flush, 250);
   };
+
+  if (storage && typeof window !== 'undefined') {
+    // leaving the page (reload, close, switching apps on a phone) must not lose the last change
+    window.addEventListener('pagehide', flush);
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden') flush();
+    });
+  }
 
   const repo: Repo & { _state: State; flush(): void } = {
     userId,

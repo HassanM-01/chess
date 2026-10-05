@@ -64,6 +64,7 @@ function ThemeApplier(): null {
   const { data } = useProfile();
   const theme = data?.settings.theme ?? 'system';
   useEffect(() => {
+    if (!data) return; // profile still loading: keep the theme the page started with instead of flashing back to the system one
     const root = document.documentElement;
     if (theme === 'system') root.removeAttribute('data-theme');
     else root.setAttribute('data-theme', theme);
@@ -72,7 +73,7 @@ function ThemeApplier(): null {
     } catch {
       /* ignore */
     }
-  }, [theme]);
+  }, [theme, data]);
   return null;
 }
 

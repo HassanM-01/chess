@@ -196,6 +196,12 @@ function contract(name: string, make: () => Promise<{ repo: Repo; cleanup?: () =
       expect(p1.lessons).toEqual({ values: true });
       expect(p1.daily).toEqual({ date: '2026-10-05', puzzles: 4 });
       expect((await repo.getProgress()).lessons).toEqual({ values: true });
+
+      // the coach's plan is saved with the progress row (needs migration 0005 on a real database)
+      const stored = { generatedAt: '2026-10-05T12:00:00.000Z', forGames: 7, report: { headline: 'h', diagnosis: 'd', strengths: 's', habits: [], plan: [{ day: 'Mon', title: 't', minutes: 10, action: 'trainer' as const }], encouragement: 'e' } };
+      await repo.updateProgress({ coach: { report: stored } });
+      expect((await repo.getProgress()).coach.report).toEqual(stored);
+      expect((await repo.getProgress()).lessons).toEqual({ values: true }); // other fields untouched
     });
 
     it('puzzles: query by theme and rating window, exclude ids, count by theme, fetch by id', async () => {

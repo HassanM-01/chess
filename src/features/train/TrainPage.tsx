@@ -13,7 +13,7 @@ export function TrainPage(): JSX.Element {
   const { data: training = [] } = useTrainingItems();
   const { data: attempts = [] } = useAttempts();
   const { data: counts = {} } = usePuzzleCounts();
-  const { startPuzzles, startTrainer, startFix } = useStartSession();
+  const { startPuzzles, startingPuzzles, startTrainer, startFix } = useStartSession();
   const controller = useSyncController();
   const factory = useFactoryState();
 
@@ -129,8 +129,8 @@ export function TrainPage(): JSX.Element {
       <div className="card stack-s">
         <h2>Daily mix</h2>
         <p className="muted small">Ten puzzles weighted toward your weakest themes. The theme is hidden, like in a real game.</p>
-        <button className="btn primary" onClick={() => void startPuzzles({ theme: 'mix', n: 10 })} data-testid="start-mix">
-          Start 10 puzzles
+        <button className="btn primary" disabled={startingPuzzles} onClick={() => void startPuzzles({ theme: 'mix', n: 10 })} data-testid="start-mix">
+          {startingPuzzles ? 'Loading puzzles…' : 'Start 10 puzzles'}
         </button>
       </div>
 
@@ -142,7 +142,7 @@ export function TrainPage(): JSX.Element {
             const a = acc(k);
             if (!cnt) return null;
             return (
-              <button key={k} className="theme-btn" onClick={() => void startPuzzles({ theme: k, n: 8 })} data-testid={`theme-${k}`}>
+              <button key={k} className="theme-btn" disabled={startingPuzzles} onClick={() => void startPuzzles({ theme: k, n: 8 })} data-testid={`theme-${k}`}>
                 <b>{THEMES[k].name}</b>
                 <span className="small muted">{a ? `${a.pct}% of ${a.n} solved` : `${cnt} puzzles`}</span>
                 <div className="meter good">

@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { ThemeKey } from '@/db/types';
 import { THEMES } from '@/content/themes';
@@ -18,6 +18,17 @@ const TRAINER_TITLES: Record<TrainerMode, string> = {
   mix: 'Your game trainer',
 };
 
+const PICK_TIMEOUT_MS = 20_000;
+
+/** Reject if `p` has not settled in `ms`, so a hung request cannot leave the Start button stuck. */
+function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
+  let timer: ReturnType<typeof setTimeout>;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error('this is taking too long, check your connection and try again')), ms);
+  });
+  return Promise.race([p, timeout]).finally(() => clearTimeout(timer));
+}
+
 /** Launchers for training sessions, shared by the Coach, Train, Learn and Games screens. */
 export function useStartSession() {
   const nav = useNavigate();
@@ -27,24 +38,40 @@ export function useStartSession() {
   const { data: skill } = useSkillProfile();
   const { data: themeSkill = [] } = useThemeSkill();
 
+  /** true while a puzzle session is being assembled (the bank lookup is a series of network calls) */
+  const [startingPuzzles, setStartingPuzzles] = useState(false);
+  const inFlight = useRef(false);
+
   const startPuzzles = useCallback(
     async (o: { theme: ThemeKey | 'mix'; n: number; title?: string; onDone?: SessionOptions['onDone']; returnTo?: string }): Promise<void> => {
-      // Personal puzzles first (about 70% of the set when there are enough); the shared bank fills the rest.
-      const ratings = Object.fromEntries(themeSkill.map((t) => [t.theme, t.rating]));
-      const mine = pickGenerated(training, o.theme, Math.ceil(o.n * 0.7), { weights: skill?.themeWeights ?? null, ratings });
-      const bank = o.n - mine.length > 0 ? await pickPuzzles(repo, { theme: o.theme, n: o.n - mine.length, themeWeights: skill?.themeWeights ?? null }) : [];
-      const items = [...mine.map(genToSessionItem), ...bank.map(puzzleItem)]; // personal first
-      if (!items.length) {
-        toast('No puzzles for that theme yet.');
-        return;
+      if (inFlight.current) return; // ignore repeat taps while the first one is still loading
+      inFlight.current = true;
+      setStartingPuzzles(true);
+      try {
+        // Personal puzzles first (about 70% of the set when there are enough); the shared bank fills the rest.
+        const ratings = Object.fromEntries(themeSkill.map((t) => [t.theme, t.rating]));
+        const mine = pickGenerated(training, o.theme, Math.ceil(o.n * 0.7), { weights: skill?.themeWeights ?? null, ratings });
+        const bank = o.n - mine.length > 0 ? await withTimeout(pickPuzzles(repo, { theme: o.theme, n: o.n - mine.length, themeWeights: skill?.themeWeights ?? null }), PICK_TIMEOUT_MS) : [];
+        const items = [...mine.map(genToSessionItem), ...bank.map(puzzleItem)]; // personal first
+        if (!items.length) {
+          toast('No puzzles for that theme yet.');
+          return;
+        }
+        start(items, {
+          title: o.title ?? (o.theme === 'mix' ? 'Daily mix' : THEMES[o.theme].name),
+          hideTheme: o.theme === 'mix',
+          onDone: o.onDone,
+          returnTo: o.returnTo,
+        });
+        nav('/train/session');
+      } catch (e) {
+        // No silent taps: say why the session did not start.
+        console.error('could not start puzzles', e);
+        toast(`Couldn't load puzzles: ${e instanceof Error && e.message ? e.message : 'unknown error'}`);
+      } finally {
+        inFlight.current = false;
+        setStartingPuzzles(false);
       }
-      start(items, {
-        title: o.title ?? (o.theme === 'mix' ? 'Daily mix' : THEMES[o.theme].name),
-        hideTheme: o.theme === 'mix',
-        onDone: o.onDone,
-        returnTo: o.returnTo,
-      });
-      nav('/train/session');
     },
     [repo, skill, training, themeSkill, start, nav],
   );
@@ -78,5 +105,5 @@ export function useStartSession() {
     [start],
   );
 
-  return { startPuzzles, startTrainer, startFix, startItems };
+  return { startPuzzles, startingPuzzles, startTrainer, startFix, startItems };
 }

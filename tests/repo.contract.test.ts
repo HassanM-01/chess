@@ -210,6 +210,9 @@ function contract(name: string, make: () => Promise<{ repo: Repo; cleanup?: () =
       const all = { theme: 'free' as const, limit: 2000 };
       expect(mine(await repo.queryPuzzles(all))).toEqual(['contract_a', 'contract_b']);
       expect(mine(await repo.queryPuzzles({ ...all, minRating: 850, maxRating: 950 }))).toEqual(['contract_b']);
+      // theme skills are Elo floats; the rating column is an integer (regression: "invalid input syntax for type integer: 634.223")
+      expect(mine(await repo.queryPuzzles({ ...all, minRating: 750.4, maxRating: 900.6 }))).toEqual(['contract_b']);
+      expect(mine(await repo.queryPuzzles({ ...all, minRating: 900.5, maxRating: 1000 }))).toEqual([]);
       expect(mine(await repo.queryPuzzles({ ...all, excludeIds: ['contract_a'] }))).toEqual(['contract_b']);
       expect((await repo.queryPuzzles({ theme: 'free', limit: 1 })).length).toBe(1);
       const counts = await repo.countPuzzlesByTheme();

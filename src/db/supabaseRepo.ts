@@ -570,8 +570,10 @@ export function createSupabaseRepo(sb: SupabaseClient, userId: string): Repo {
     async queryPuzzles(q: PuzzleQuery) {
       const exclude = new Set(q.excludeIds ?? []);
       let query = sb.from('puzzles').select('*').contains('themes', [q.theme]);
-      if (q.minRating != null) query = query.gte('rating', q.minRating);
-      if (q.maxRating != null) query = query.lte('rating', q.maxRating);
+      // puzzles.rating is an integer column but a theme skill (an Elo, so a float like 784.223) is used for the window:
+      // Postgres rejects "invalid input syntax for type integer". Rounding inward is equivalent for integer ratings.
+      if (q.minRating != null) query = query.gte('rating', Math.ceil(q.minRating));
+      if (q.maxRating != null) query = query.lte('rating', Math.floor(q.maxRating));
       query = query.limit((q.limit ?? 300) + exclude.size);
       const rows = ok(await query) as PuzzleDb[];
       const mapped = rows.filter((r) => !exclude.has(r.id)).map(mapPuzzle);

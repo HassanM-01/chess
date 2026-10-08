@@ -10,16 +10,16 @@ import { categorize } from './categorize';
 import type { AnalyzableGame, GameSummary, MistakeDraft, Outcome, Termination } from './types';
 import { verdictCounts, walkSteps, type EvalTriple } from './walk';
 
-export const ANALYSIS_DEPTH = 11;
-export const ENGINE_TAG = 'sf18-lite-d11';
+export const ANALYSIS_DEPTH = 15;
+export const ENGINE_TAG = 'sf18-lite-d15';
 
 /** Candidate thresholds from the spec. */
-export const MISTAKE_MIN_DROP = 18;
+export const MISTAKE_MIN_DROP = 17;
 export const MISTAKE_MIN_BEFORE = 6;
 export const MISTAKE_SKIP_IF_ABOVE = 88;
 export const BLUNDER_DROP = 30;
 
-/** Evaluate every position of the game at depth 11, background priority. */
+/** Evaluate every position of the game at ANALYSIS_DEPTH, background priority. */
 export async function evaluateGame(
   game: Pick<AnalyzableGame, 'startFen' | 'movesUci'>,
   evalPos: Evaluator,

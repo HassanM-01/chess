@@ -10,12 +10,16 @@ export interface EngineTransport {
   terminate(): void;
 }
 
-export type TransportFactory = (file: string) => EngineTransport;
+/** `wasm` overrides where the worker script loads its .wasm from (used for the big build hosted off-site). */
+export type TransportFactory = (file: string, wasm?: string) => EngineTransport;
+
+export type EngineKind = 'fast' | 'compat' | 'strong';
 
 export interface EngineFile {
   file: string;
-  kind: 'fast' | 'compat';
+  kind: EngineKind;
   bootTimeoutMs: number;
+  wasm?: string;
 }
 
 export const DEFAULT_ENGINE_FILES: EngineFile[] = [
@@ -40,7 +44,7 @@ const JOB_TIMEOUT_MS = 45_000;
 
 export class Engine {
   status: EngineStatus = 'idle';
-  kind: '' | 'fast' | 'compat' = '';
+  kind: '' | EngineKind = '';
   private transport: EngineTransport | null = null;
   private ready: Promise<void> | null = null;
   private opts: Record<string, number> = {};
@@ -50,9 +54,14 @@ export class Engine {
   private running: Job | null = null;
   private listeners = new Set<() => void>();
 
+  /**
+   * `files` is tried in order. It may be a function so the list can depend on the device (the strong build is only
+   * offered where it is downloaded and cached). `onFileFailed` lets the caller remember a build that did not start.
+   */
   constructor(
     private factory: TransportFactory,
-    private files: EngineFile[] = DEFAULT_ENGINE_FILES,
+    private files: EngineFile[] | (() => Promise<EngineFile[]>) = DEFAULT_ENGINE_FILES,
+    private onFileFailed?: (f: EngineFile, e: unknown) => void,
   ) {}
 
   subscribe(cb: () => void): () => void {
@@ -73,7 +82,8 @@ export class Engine {
     if (this.ready) return this.ready;
     this.setStatus('loading');
     this.ready = (async () => {
-      for (const f of this.files) {
+      const files = typeof this.files === 'function' ? await this.files().catch(() => DEFAULT_ENGINE_FILES) : this.files;
+      for (const f of files) {
         try {
           await this.start(f);
           this.kind = f.kind;
@@ -81,6 +91,7 @@ export class Engine {
           return;
         } catch (e) {
           console.warn('engine failed to start', f.file, e);
+          this.onFileFailed?.(f, e);
         }
       }
       this.setStatus('failed');
@@ -95,7 +106,7 @@ export class Engine {
       let t: ReturnType<typeof setTimeout> | undefined;
       let w: EngineTransport;
       try {
-        w = this.factory(f.file);
+        w = this.factory(f.file, f.wasm);
       } catch (e) {
         rej(e);
         return;

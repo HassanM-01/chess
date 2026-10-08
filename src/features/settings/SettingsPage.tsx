@@ -1,14 +1,71 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Hero, Segmented, Switch } from '@/components/ui';
 import { ChesscomError } from '@/chesscom/client';
 import { chesscomClient } from '@/chesscom/instance';
 import { LEVELS } from '@/features/play/levels';
+import { getStrongPref, strongStore, type StrongPref } from '@/engine/strong';
 import { useAuth } from '@/state/auth';
+import { engine, useStrongEngine } from '@/state/engine';
 import { useProfile, useUpdateProfile } from '@/state/queries';
 import { toast } from '@/state/toast';
 import { timeAgo } from '@/lib/util';
 import { usernameSaveError } from '@/features/onboarding/OnboardingPage';
+
+/** Strong-engine controls; only shown when this build has one configured. Per device, not per account. */
+function StrongEngineCard(): JSX.Element | null {
+  const st = useStrongEngine();
+  const [pref, setPref] = useState<StrongPref>(getStrongPref);
+  useEffect(() => {
+    void strongStore.refresh();
+  }, []);
+  if (st.phase === 'unavailable') return null;
+  const inUse = engine.kind === 'strong';
+  const status =
+    st.phase === 'downloading'
+      ? `Downloading the strong engine… ${Math.round(st.fraction * 100)}%`
+      : st.phase === 'ready'
+        ? inUse
+          ? 'Using the strong engine on this device.'
+          : 'Downloaded. It starts the next time you open the app.'
+        : st.phase === 'needs-download'
+          ? 'Not downloaded yet (about 110 MB, once).'
+          : st.phase === 'error'
+            ? st.message
+            : 'Off on this device. The small engine is used.';
+  return (
+    <div className="card stack">
+      <h3>Strong engine (this device)</h3>
+      <p className="small muted">
+        A larger version of Stockfish gives slightly better move choices when your games are analyzed. Auto turns it on for computers only.
+        Games are analyzed once and the results sync to your other devices.
+      </p>
+      <Segmented
+        label="Strong engine"
+        value={pref}
+        options={[
+          { value: 'auto', label: 'Auto' },
+          { value: 'on', label: 'On' },
+          { value: 'off', label: 'Off' },
+        ]}
+        onChange={(v) => {
+          setPref(v);
+          void strongStore.setPref(v).then((s) => {
+            if (s.phase === 'needs-download') void strongStore.download();
+          });
+        }}
+      />
+      <p className="small" role="status" data-testid="strong-status">
+        {status}
+      </p>
+      {(st.phase === 'needs-download' || st.phase === 'error') && (
+        <button className="btn" onClick={() => void strongStore.download()}>
+          Download now
+        </button>
+      )}
+    </div>
+  );
+}
 
 export function SettingsPage(): JSX.Element {
   const nav = useNavigate();
@@ -141,6 +198,8 @@ export function SettingsPage(): JSX.Element {
           onChange={(v) => setSetting({ theme: v })}
         />
       </div>
+
+      <StrongEngineCard />
 
       <div className="card stack">
         <h3>Delete account</h3>

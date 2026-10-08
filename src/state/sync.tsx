@@ -46,7 +46,7 @@ export class SyncController {
     private client: ChesscomClient = createChesscomClient(),
     evalPos: Evaluator = makeEvaluator(getEngine()),
   ) {
-    this.queue = new AnalysisQueue(repo, evalPos);
+    this.queue = new AnalysisQueue(repo, evalPos, () => getEngine().kind);
     this.factory = new PuzzleFactory(repo, getEngine(), qc);
     let lastDone = 0;
     this.queue.subscribe(() => {

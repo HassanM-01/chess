@@ -11,7 +11,8 @@ import type { AnalyzableGame, GameSummary, MistakeDraft, Outcome, Termination } 
 import { verdictCounts, walkSteps, type EvalTriple } from './walk';
 
 export const ANALYSIS_DEPTH = 15;
-export const ENGINE_TAG = 'sf18-lite-d15';
+/** Recorded with each analysis: which engine build produced it ('strong' is the full ~108 MB network). */
+export const engineTag = (kind: string): string => `sf18-${kind === 'strong' ? 'full' : 'lite'}-d${ANALYSIS_DEPTH}`;
 
 /** Candidate thresholds from the spec. */
 export const MISTAKE_MIN_DROP = 17;

@@ -29,13 +29,19 @@ export default defineConfig({
       workbox: {
         // The single-threaded lite engine (~7 MB wasm) is precached so analysis and bot play work offline after the first visit.
         globPatterns: ['**/*.{js,css,html,svg,png,wasm,json,woff2}'],
-        globIgnores: ['engine/stockfish-18-asm.js'],
+        // stockfish-18-single.js must NOT be precached: a worker script answered by the service worker loses its #fragment,
+        // and that fragment is how the worker is told where the big wasm lives (src/engine/browser.ts).
+        globIgnores: ['engine/stockfish-18-asm.js', 'engine/stockfish-18-single.*'],
         maximumFileSizeToCacheInBytes: 9 * 1024 * 1024,
         navigateFallback: '/index.html',
         navigateFallbackDenylist: [/^\/api\//, /^\/engine\//],
         runtimeCaching: [
           // The asm.js fallback engine (~10 MB) is only fetched on old browsers; cache it when it is.
           { urlPattern: /\/engine\/stockfish-18-asm\.js$/, handler: 'CacheFirst', options: { cacheName: 'engine-fallback', cacheableResponse: { statuses: [0, 200] } } },
+          // The optional strong engine (~108 MB wasm, downloaded once on computers; see src/engine/strong.ts). Matches the
+          // same-origin copy or a CDN copy as long as the file keeps its name
+          // (Workbox only matches a RegExp against cross-origin URLs from their first character, hence the anchor).
+          { urlPattern: /^https?:\/\/.*\/stockfish-18-single\.wasm$/, handler: 'CacheFirst', options: { cacheName: 'engine-strong', cacheableResponse: { statuses: [0, 200] } } },
           { urlPattern: /^https:\/\/fonts\.(googleapis|gstatic)\.com\/.*/, handler: 'StaleWhileRevalidate', options: { cacheName: 'fonts', expiration: { maxEntries: 20 } } },
         ],
       },

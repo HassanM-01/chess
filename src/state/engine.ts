@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from 'react';
 import { getEngine } from '@/engine/browser';
 import { makeEvaluator } from '@/engine/evalPos';
+import { strongStore, type StrongState } from '@/engine/strong';
 import type { EngineStatus } from '@/engine/types';
 
 const engine = getEngine();
@@ -16,3 +17,8 @@ export const engineLabel = (s: EngineStatus): string =>
 /** Shared evaluator for interactive features (bot, Blunder Check, hints, London coach). */
 export const evalPos = makeEvaluator(engine);
 export { engine };
+
+/** State of the optional strong engine download on this device (see src/engine/strong.ts). */
+export function useStrongEngine(): StrongState {
+  return useSyncExternalStore(strongStore.subscribe, strongStore.getState, () => ({ phase: 'unavailable' }) as StrongState);
+}

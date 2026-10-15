@@ -14,6 +14,8 @@ export interface BotGameInput {
   moves: Uci[];
   result: string; // '1-0' | '0-1' | '1/2-1/2'
   opening?: string | null;
+  /** PGN Event header; defaults by source */
+  event?: string;
 }
 
 /** Stores a finished bot / London game so it can be reviewed and walked through like any other game. */
@@ -29,7 +31,7 @@ export async function saveBotGame(repo: Repo, g: BotGameInput): Promise<GameRow>
   }
   const white = g.userColor === 'w' ? g.username : g.botName;
   const black = g.userColor === 'b' ? g.username : g.botName;
-  c.setHeader('Event', g.source === 'london' ? 'London System practice' : 'Practice game');
+  c.setHeader('Event', g.event ?? (g.source === 'london' ? 'London System practice' : 'Practice game'));
   c.setHeader('White', white);
   c.setHeader('Black', black);
   c.setHeader('Result', g.result);

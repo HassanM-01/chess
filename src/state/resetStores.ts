@@ -1,3 +1,4 @@
+import { useCaroStore } from '@/features/caro/caroStore';
 import { useLondonStore } from '@/features/london/londonStore';
 import { usePlayStore } from '@/features/play/playStore';
 import { useSessionStore } from '@/features/train/sessionStore';
@@ -6,5 +7,6 @@ import { useSessionStore } from '@/features/train/sessionStore';
 export function resetUserStores(): void {
   usePlayStore.getState().set(null);
   useLondonStore.getState().set(null);
+  useCaroStore.getState().set(null);
   useSessionStore.setState({ items: [], options: { title: '' }, cursor: { idx: 0, score: 0, missed: [], finished: false, results: [] } });
 }

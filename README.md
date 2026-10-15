@@ -105,6 +105,18 @@ repetition. Sessions serve personal puzzles first (about 70% of a set) and fill 
 Needs `supabase/migrations/0004_personal_puzzles.sql` (adds the `variant` and `generated` training kinds). Without it
 everything else keeps working; only these extras are skipped.
 
+## Caro-Kann tab
+
+The **Caro-Kann** tab (`src/features/caro/`) is the London simulator from the other side of the board. You play Black;
+the bot plays one of seven real anti-Caro-Kann plans as White (Advance, Advance with g4/h4, Classical, Exchange,
+Panov-Botvinnik, Two Knights, Fantasy) and drops out of theory once you do. The coach (`advice.ts`) has the same
+priorities as the London coach (mate, hanging pieces, recapture, free material) plus Caro-specific answers: a pawn or
+knight attacking your bishop, `Qb3` against b7, your d5 pawn being attacked more often than it is defended, and the `...c5`
+break against the Advance. The setup checklist is `...c6, ...d5, ...Bf5, ...e6, ...Nf6, ...Nd7, ...Be7, O-O`, and playing
+`...e6` before `...Bf5` triggers the "bishop first" warning. Blunder Check, Take it back, Why?, levels and the post-game
+walkthrough all work like London. Six trainer lines (`src/content/caro.ts`, checked against Stockfish in
+`tests/caro.lines.test.ts`) are in Learn → Your openings.
+
 ## Checkmate school
 
 Learn → Checkmate school (`src/mate/`). It teaches the *plan* for mating, not just the shapes.

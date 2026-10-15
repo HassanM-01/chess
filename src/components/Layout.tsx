@@ -8,6 +8,7 @@ import { useSyncState } from '@/state/sync';
 const ICONS: Record<string, string> = {
   london:
     '<circle cx="12" cy="6" r="2.6" fill="currentColor"/><circle cx="6.5" cy="15.5" r="2.6" fill="currentColor"/><circle cx="17.5" cy="15.5" r="2.6" fill="currentColor"/><path d="M12 8.6 7.8 13.4M12 8.6l4.2 4.8M9.1 15.5h5.8" stroke="currentColor" stroke-width="1.6"/>',
+  caro: '<path d="M12 3 5 6v5c0 4.5 3 8 7 10 4-2 7-5.5 7-10V6z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M9 12l2 2 4-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>',
   coach: '<path d="M4 19V9m6 10V5m6 14v-7m4 7H2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>',
   train:
     '<circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="1.2" fill="currentColor"/>',
@@ -21,6 +22,7 @@ const ICONS: Record<string, string> = {
 const TABS: [string, string, string][] = [
   ['/', 'coach', 'Coach'],
   ['/london', 'london', 'London'],
+  ['/caro', 'caro', 'Caro-Kann'],
   ['/train', 'train', 'Train'],
   ['/learn', 'learn', 'Learn'],
   ['/play', 'play', 'Play'],

@@ -18,6 +18,8 @@ export interface ProfileSettings {
   blunderCheck?: boolean;
   londonGuide?: boolean;
   londonLevel?: number;
+  caroGuide?: boolean;
+  caroLevel?: number;
   /** walkthrough quiz toggle */
   wtQuiz?: boolean;
   theme?: 'light' | 'dark' | 'system';
@@ -238,6 +240,7 @@ export interface PlayStats {
   games?: number;
   wins?: number;
   london?: { games?: number; wins?: number };
+  caro?: { games?: number; wins?: number };
 }
 export interface ProgressRow {
   userId: string;

@@ -183,6 +183,13 @@ export function SettingsPage(): JSX.Element {
           </div>
           <Switch label="London coach arrow" checked={s.londonGuide !== false} onChange={(v) => setSetting({ londonGuide: v })} />
         </div>
+        <div className="toggle">
+          <div>
+            <b>Caro-Kann coach arrow</b>
+            <div className="small muted">Shows the coach's move in the Caro-Kann simulator</div>
+          </div>
+          <Switch label="Caro-Kann coach arrow" checked={s.caroGuide !== false} onChange={(v) => setSetting({ caroGuide: v })} />
+        </div>
       </div>
 
       <div className="card stack">

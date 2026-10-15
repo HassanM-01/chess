@@ -1,5 +1,6 @@
 // Opening lines ported from the prototype (content.js). Each move is [san, explanation]. All lines are verified legal.
 import type { Color } from '@/chess/types';
+import { CARO } from './caro';
 
 export type OpeningMove = [san: string, explanation: string];
 
@@ -15,7 +16,7 @@ export interface OpeningSet {
   lines: OpeningLine[];
 }
 
-export type OpeningKey = 'london' | 'italian' | 'vsE4' | 'vsD4';
+export type OpeningKey = 'london' | 'italian' | 'vsE4' | 'vsD4' | 'caro';
 
 export const OPENINGS: Record<OpeningKey, OpeningSet> = {
   "london": {
@@ -981,5 +982,6 @@ export const OPENINGS: Record<OpeningKey, OpeningSet> = {
         ]
       }
     ]
-  }
+  },
+  "caro": CARO
 } as Record<OpeningKey, OpeningSet>;

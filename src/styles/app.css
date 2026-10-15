@@ -60,7 +60,7 @@ p{margin:0}
 .pill.warn{background:var(--warn-soft);color:var(--warn)}
 .pill.acc{background:var(--accent-soft);color:var(--accent)}
 nav.tabs{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--line);padding:6px 8px calc(6px + env(safe-area-inset-bottom,0px));z-index:20}
-nav.tabs .inner{max-width:560px;margin:0 auto;display:grid;grid-template-columns:repeat(6,1fr);gap:2px}
+nav.tabs .inner{max-width:560px;margin:0 auto;display:grid;grid-template-columns:repeat(7,1fr);gap:0}
 .tab{appearance:none;border:0;background:transparent;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 2px;border-radius:10px;font-size:12px;font-weight:700;color:var(--ink2);cursor:pointer}
 .tab svg{width:22px;height:22px}
 .tab[aria-current="page"]{color:var(--accent);background:var(--accent-soft)}
@@ -183,4 +183,5 @@ body.in-session .app{padding-bottom:calc(24px + env(safe-area-inset-bottom,0px))
 .lchips{display:flex;flex-wrap:wrap;gap:5px}
 .lchip{font-family:var(--f-mono);font-size:13px;font-weight:700;padding:3px 8px;border-radius:7px;background:var(--surface2);color:var(--ink2)}
 .lchip.done{background:var(--good-soft);color:var(--good)}
-.tab{font-size:11px}
+.tab{font-size:11px;white-space:nowrap}
+@media (max-width:400px){.tab{font-size:10px;letter-spacing:-.2px}}

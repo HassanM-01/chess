@@ -3,7 +3,7 @@ import type { Repo } from '@/db/repo';
 import type { GameRow } from '@/db/types';
 import type { Evaluator } from '@/engine/evalPos';
 import { generateTrainingItems } from '@/skill/trainingItems';
-import { ANALYSIS_DEPTH, ENGINE_TAG, analyzeFromEvals, evaluateGame } from './analyzeGame';
+import { ANALYSIS_DEPTH, engineTag, analyzeFromEvals, evaluateGame } from './analyzeGame';
 
 export interface QueueState {
   running: boolean;
@@ -34,6 +34,8 @@ export class AnalysisQueue {
   constructor(
     private repo: Repo,
     private evalPos: Evaluator,
+    /** which engine build is running, for the stored engine tag */
+    private engineKind: () => string = () => 'fast',
   ) {}
 
   get state(): QueueState {
@@ -127,6 +129,6 @@ export class AnalysisQueue {
     }
     const { mistakes, summary } = analyzeFromEvals(g, evals);
     const trainingItems = generateTrainingItems(g, evals, mistakes, { gameId: g.id, opponent: opponentName(g) });
-    await this.repo.saveAnalysis({ gameId: g.id, engine: ENGINE_TAG, depth: ANALYSIS_DEPTH, evals, summary, mistakes, trainingItems });
+    await this.repo.saveAnalysis({ gameId: g.id, engine: engineTag(this.engineKind()), depth: ANALYSIS_DEPTH, evals, summary, mistakes, trainingItems });
   }
 }

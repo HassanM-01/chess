@@ -1,4 +1,4 @@
-// Phase 3 acceptance: the prototype's real outputs on known games (plies are 0-based, depth 11).
+// Phase 3 acceptance: the prototype's real outputs on known games (plies are 0-based; the prototype ran depth 11, the app now analyzes at depth 15).
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { beforeAll, describe, expect, it } from 'vitest';
@@ -37,7 +37,7 @@ describe('PGN import', () => {
   });
 });
 
-describe('analysis on known games (real Stockfish, depth 11)', () => {
+describe('analysis on known games (real Stockfish, depth 15)', () => {
   const engine = createNodeEngine();
   const evalPos = makeEvaluator(engine);
   const results = new Map<string, GameAnalysisResult>();

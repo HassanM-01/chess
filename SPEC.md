@@ -301,9 +301,9 @@ Port `Engine` from the prototype:
 - `terminalEval(fen)`: if checkmate or stalemate, return without asking the engine.
 
 ### 6.2 Game analysis (`src/analysis/analyzeGame.ts`)
-- Evaluate every position at **depth 11** (background priority). Store `[cp, mate, best]` per ply.
+- Evaluate every position at **depth 15** (background priority). Store `[cp, mate, best]` per ply.
 - Win probability for White: `wp = 50 + 50 * (2 / (1 + exp(-0.00368208 * clamp(cp, -2000, 2000))) - 1)`; mate means 100 or 0.
-- For each **user** move: `drop = wpUser(before) - wpUser(after)`. It's a candidate mistake if `drop >= 18` and `wpUser(before) >= 6`, unless the user is still above 88% after it (and no mate was missed).
+- For each **user** move: `drop = wpUser(before) - wpUser(after)`. It's a candidate mistake if `drop >= 17 (it was 18 at depth 11; depth 15 reads the same borderline fork about a point lower)` and `wpUser(before) >= 6`, unless the user is still above 88% after it (and no mate was missed).
 - Severity: `blunder` if `drop >= 30`, else `mistake`.
 - Classify with the prototype's `categorize()` (Section 13). Categories in priority order:
   1. `missed_mate`: the user had a forced mate before and doesn't after.
@@ -470,7 +470,7 @@ Steps:
 
 ### Phase 3: Pull recent games and analysis
 - `chesscom/sync.ts`, PGN parsing, analysis queue (resumable), mistake classifier, training item generation. Games list and review screen.
-- ✅ For `huhsaaan`, Pull recent games imports the October 2026 games without duplicates on a second press. Unit tests on these known games (from `reference/data/huhsaaan-games.pgn`, plies are 0-based, analysis at depth 11) must pass. These are the prototype's actual outputs:
+- ✅ For `huhsaaan`, Pull recent games imports the October 2026 games without duplicates on a second press. Unit tests on these known games (from `reference/data/huhsaaan-games.pgn`, plies are 0-based, analysis now runs at depth 15, the prototype used 11) must pass. These are the prototype's actual outputs:
   - Game vs **Nahomxo** (2026-10-01): a mistake at ply 13 (`7...Nh6`) classified `fork` (Nxc7+ hits king and rook).
   - Game vs **19293a** (2026-10-05, user is Black): **zero** mistakes.
   - Game vs **whole_cooked_chicken** (2026-10-05): a blunder at ply 6 (`4.Nf3`) classified `ignored`, whose explanation mentions the bishop on f4.

@@ -42,8 +42,8 @@ describe('analysis queue + persistence (memory repo, real engine)', () => {
 
     const analysis = await repo.getAnalysis(chicken!.id);
     expect(analysis?.evals.length).toBe((chicken?.movesUci.length ?? 0) + 1);
-    expect(analysis?.engine).toBe('sf18-lite-d11');
-    expect(analysis?.depth).toBe(11);
+    expect(analysis?.engine).toBe('sf18-lite-d15');
+    expect(analysis?.depth).toBe(15);
 
     const items = await repo.listTrainingItems();
     const kinds = new Set(items.map((i) => i.kind));

@@ -145,6 +145,17 @@ Note for anyone changing the model call: on Sonnet 5.5, hidden thinking is count
 - **All engine work runs in the browser** (single Web Worker, `stockfish-18-lite-single`, asm.js fallback). Interactive
   requests (bot moves, Blunder Check, hints, London coach) always jump ahead of background analysis and even interrupt a
   running background search, so taps never feel frozen.
+- **Optional strong engine (computers only):** the full Stockfish 18 build (single thread, ~108 MB wasm) can be used instead
+  of the 7 MB lite one. It is **off unless the build sets `VITE_STRONG_ENGINE_WASM`**, so a plain deploy is unchanged:
+  - `VITE_STRONG_ENGINE_WASM=https://your-cdn/.../stockfish-18-single.wasm` serves the wasm from a CDN that sends CORS
+    headers (keep the file name). Use this on Vercel Hobby, whose 100 MB static-file limit is smaller than the file.
+  - `VITE_STRONG_ENGINE_WASM=local` copies it into the deploy (`scripts/copy-engine.mjs`) for hosts that accept a file that big.
+  - Settings → "Strong engine (this device)" has Auto / On / Off. Auto means computers only (no touch-first input, no iOS,
+    4+ cores, no data saver). The wasm is downloaded once into the service worker's cache and used from the next launch;
+    until then, and whenever it fails to start, the lite engine runs. Analyses are labelled `sf18-full-d15` vs `sf18-lite-d15`,
+    and results sync to every device, so a phone shows what the computer analyzed.
+  - Do not precache `stockfish-18-single.js`: a worker script answered by the service worker loses the `#fragment` that tells it
+    where the wasm is (see the `globIgnores` comment in `vite.config.ts`).
 - **Analysis is reproducible:** the hash table is cleared (`ucinewgame`) at the start of every analyzed game.
 - **Supabase is the only backend**, with RLS on every table. Analysis results are written once and are available on every device.
 - **Resumable:** a game left `running` by a closed tab is reset to `pending` and analyzed on the next load.

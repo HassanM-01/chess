@@ -12,6 +12,12 @@ export interface Arrow {
   color: ArrowColor;
 }
 export type MarkKind = 'bad' | 'good' | 'sel';
+/** A round label pinned to the top-right corner of a square (move-quality icons in the game review). */
+export interface Badge {
+  square: Square;
+  color: string;
+  glyph: string;
+}
 
 export const arrowOf = (u: Uci | null | undefined, color: ArrowColor): Arrow | null => (u ? { from: u.slice(0, 2), to: u.slice(2, 4), color } : null);
 export const arrowsOf = (...a: (Arrow | null | undefined)[]): Arrow[] => a.filter((x): x is Arrow => !!x);
@@ -25,6 +31,7 @@ export interface BoardProps {
   movableColor?: Color | null;
   lastMove?: Uci | null;
   arrows?: Arrow[];
+  badges?: Badge[];
   marks?: Record<Square, MarkKind>;
   /** a legal move was made (UCI, with promotion piece when needed) */
   onMove?: (uci: Uci) => void;
@@ -53,6 +60,7 @@ export function Board({
   movableColor = null,
   lastMove = null,
   arrows = [],
+  badges = [],
   marks = {},
   onMove,
   onTap,
@@ -288,6 +296,17 @@ export function Board({
               markerEnd={`url(#ah-${uid}-${a.color})`}
               data-arrow={`${a.from}${a.to}:${a.color}`}
             />
+          );
+        })}
+        {badges.map((b) => {
+          const [cx, cy] = xy(b.square);
+          return (
+            <g key={`badge-${b.square}`} data-badge={b.square}>
+              <circle cx={cx + 34} cy={cy - 34} r={25} fill={b.color} stroke="#fff" strokeWidth={3} />
+              <text x={cx + 34} y={cy - 33} textAnchor="middle" dominantBaseline="central" fontSize={b.glyph.length > 1 ? 25 : 32} fontWeight={800} fill="#fff" fontFamily="system-ui, sans-serif">
+                {b.glyph}
+              </text>
+            </g>
           );
         })}
       </svg>

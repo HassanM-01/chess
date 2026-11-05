@@ -34,9 +34,15 @@ interface Job {
   multipv: number;
   priority: EnginePriority;
   newGame: boolean;
+  movetimeMs?: number;
+  timeoutMs?: number;
+  interruptible: boolean;
+  onInfo?: (lines: EngineLine[], depth: number) => void;
   res: (e: PosEval) => void;
   rej: (err: unknown) => void;
   aborted?: boolean;
+  /** stopped by the caller (AbortSignal): finish with whatever was found */
+  stopped?: boolean;
 }
 
 const ABORTED = Symbol('aborted');
@@ -45,6 +51,9 @@ const JOB_TIMEOUT_MS = 45_000;
 export class Engine {
   status: EngineStatus = 'idle';
   kind: '' | EngineKind = '';
+  /** "Stockfish 19" once the engine has introduced itself */
+  name = '';
+  private restartWanted = false;
   private transport: EngineTransport | null = null;
   private ready: Promise<void> | null = null;
   private opts: Record<string, number> = {};
@@ -62,6 +71,8 @@ export class Engine {
     private factory: TransportFactory,
     private files: EngineFile[] | (() => Promise<EngineFile[]>) = DEFAULT_ENGINE_FILES,
     private onFileFailed?: (f: EngineFile, e: unknown) => void,
+    /** UCI commands sent once after the handshake (Threads, Hash, UCI_ShowWDL ...), before the first search */
+    private initCommands?: () => string[] | Promise<string[]>,
   ) {}
 
   subscribe(cb: () => void): () => void {
@@ -123,13 +134,29 @@ export class Engine {
       t = setTimeout(() => fail(new Error('engine boot timeout')), f.bootTimeoutMs);
       w.onError(fail);
       w.onLine((line) => {
+        if (line.startsWith('id name ')) this.name = line.slice(8).trim();
         if (line.startsWith('uciok')) {
-          if (t) clearTimeout(t);
           this.transport = w;
           this.opts = {};
           w.onError((e) => console.warn('engine error', e));
           w.onLine((l) => this.handler?.(l));
-          res();
+          const done = (): void => {
+            if (t) clearTimeout(t);
+            this.handler = null;
+            res();
+          };
+          if (!this.initCommands) return done();
+          // Apply the options, then wait until the engine has allocated its memory before the first search starts.
+          void Promise.resolve(this.initCommands()).then(
+            (cmds) => {
+              this.handler = (l) => {
+                if (l.startsWith('readyok')) done();
+              };
+              for (const c of cmds) w.send(c);
+              w.send('isready');
+            },
+            fail,
+          );
         }
       });
       w.send('uci');
@@ -149,14 +176,56 @@ export class Engine {
     this.setStatus('idle');
   }
 
+  /** Re-read the init commands (thread count, hash size ...): the engine is restarted as soon as nothing is running. */
+  requestRestart(): void {
+    this.restartWanted = true;
+    if (!this.running) this.applyRestart();
+  }
+  private applyRestart(): void {
+    if (!this.restartWanted) return;
+    this.restartWanted = false;
+    this.reset();
+  }
+
   run(fen: string, o: RunOptions = {}): Promise<PosEval> {
     const priority = o.priority ?? 'interactive';
     return new Promise<PosEval>((res, rej) => {
-      const job: Job = { fen, depth: o.depth ?? 10, skill: o.skill ?? 20, multipv: o.multipv ?? 1, priority, newGame: !!o.newGame, res, rej };
+      const job: Job = {
+        fen,
+        depth: o.depth ?? 10,
+        skill: o.skill ?? 20,
+        multipv: o.multipv ?? 1,
+        priority,
+        newGame: !!o.newGame,
+        movetimeMs: o.movetimeMs,
+        timeoutMs: o.timeoutMs,
+        interruptible: o.interruptible ?? priority === 'background',
+        onInfo: o.onInfo,
+        res,
+        rej,
+      };
+      const sig = o.signal;
+      if (sig) {
+        const onAbort = (): void => {
+          const queued = this.hi.indexOf(job) >= 0 ? this.hi : this.lo.indexOf(job) >= 0 ? this.lo : null;
+          if (queued) {
+            queued.splice(queued.indexOf(job), 1);
+            rej(new Error('aborted'));
+          } else if (this.running === job && !job.stopped) {
+            job.stopped = true;
+            this.transport?.send('stop');
+          }
+        };
+        if (sig.aborted) {
+          rej(new Error('aborted'));
+          return;
+        }
+        sig.addEventListener('abort', onAbort, { once: true });
+      }
       if (priority === 'interactive') {
         this.hi.push(job);
         // Interrupt a running background search so the tap feels instant.
-        if (this.running && this.running.priority === 'background' && !this.running.aborted) {
+        if (this.running && this.running.interruptible && !this.running.aborted && !this.running.stopped) {
           this.running.aborted = true;
           this.transport?.send('stop');
         }
@@ -185,6 +254,7 @@ export class Engine {
       job.rej(e);
     }
     this.running = null;
+    if (this.restartWanted && !this.hi.length && !this.lo.length) this.applyRestart();
     void this.pump();
   }
 
@@ -210,13 +280,17 @@ export class Engine {
       this.setopt('MultiPV', job.multipv);
       const turn = job.fen.split(' ')[1];
       const lines: Record<number, EngineLine> = {};
+      let depthReached = 0;
+      const limit = job.timeoutMs ?? (job.movetimeMs ? job.movetimeMs + 30_000 : JOB_TIMEOUT_MS);
       const watchdog = setTimeout(() => {
         this.handler = null;
         this.reset();
         reject(new Error('engine timeout'));
-      }, JOB_TIMEOUT_MS);
+      }, limit);
       this.handler = (l: string) => {
         if (l.startsWith('info') && l.includes(' pv ') && l.includes(' score ')) {
+          // Bound scores come from an iteration that was cut short; they are not real evaluations.
+          if (/ score (cp|mate) -?\d+ (lower|upper)bound/.test(l)) return;
           const mp = +(l.match(/ multipv (\d+)/)?.[1] ?? 1);
           const m = l.match(/ score (cp|mate) (-?\d+)/);
           if (!m) return;
@@ -230,7 +304,13 @@ export class Engine {
             if (mate != null) mate = -mate;
           }
           const pv = l.split(' pv ')[1].trim().split(' ');
-          lines[mp] = { cpWhite: cp == null ? ((mate ?? 0) > 0 ? 10000 : -10000) : cp, mateWhite: mate, pv };
+          const depth = +(l.match(/ depth (\d+)/)?.[1] ?? 0);
+          const w = l.match(/ wdl (\d+) (\d+) (\d+)/);
+          // WDL is reported for the side to move; store it from White's point of view like the scores.
+          const wdl: [number, number, number] | undefined = w ? (turn === 'b' ? [+w[3], +w[2], +w[1]] : [+w[1], +w[2], +w[3]]) : undefined;
+          lines[mp] = { cpWhite: cp == null ? ((mate ?? 0) > 0 ? 10000 : -10000) : cp, mateWhite: mate, pv, depth, wdl };
+          if (mp === 1) depthReached = depth;
+          if (job.onInfo) job.onInfo(Object.keys(lines).map(Number).sort((a, b) => a - b).map((k) => lines[k]), depthReached);
         } else if (l.startsWith('bestmove')) {
           clearTimeout(watchdog);
           this.handler = null;
@@ -245,6 +325,8 @@ export class Engine {
             mateWhite: top.mateWhite,
             best: bm && bm !== '(none)' ? bm : null,
             pv: top.pv,
+            depth: depthReached || undefined,
+            wdl: top.wdl,
             lines: Object.keys(lines)
               .map(Number)
               .sort((a, b) => a - b)
@@ -254,7 +336,7 @@ export class Engine {
       };
       if (job.newGame) tr.send('ucinewgame');
       tr.send(`position fen ${job.fen}`);
-      tr.send(`go depth ${job.depth}`);
+      tr.send(`go depth ${job.depth}${job.movetimeMs ? ` movetime ${Math.round(job.movetimeMs)}` : ''}`);
     });
   }
 }

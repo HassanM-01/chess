@@ -7,6 +7,35 @@ and builds training from their own mistakes. It keeps adapting as they play more
 The full technical spec is in [`SPEC.md`](SPEC.md). The original single-file prototype that this app ports lives in
 [`reference/`](reference/).
 
+## Desktop app (Windows): game review + puzzles with native Stockfish
+
+`npm run desktop` opens **Blunder Check Desktop**, an Electron app that runs the real Stockfish 19 executable (all your CPU threads, gigabytes of
+hash, depth 40) instead of the slower in-browser engine. It does not need Supabase, Vercel or an account: everything is stored in your user-data folder.
+
+- **Game review, chess.com style** (`src/review/`): every move is rated *Brilliant, Great, Best, Excellent, Good, Book, Inaccuracy, Mistake, Miss, Blunder* or *Forced*,
+  with the icon on the board, a best-move arrow, the engine's best line, accuracy for both players, an evaluation graph, key moments and **Retry** (find the better move).
+  Ratings use chess.com's published expected-points thresholds (best 0, excellent ≤ 0.02, good ≤ 0.05, inaccuracy ≤ 0.10, mistake ≤ 0.20, blunder > 0.20);
+  Brilliant = a sound sacrifice, Great = the only move that holds the position, Miss = letting a win slip right after the opponent erred, Book = a named opening line.
+  Accuracy uses Lichess' formula, so it will not match chess.com's number exactly.
+- **Puzzles**: a rated trainer (Elo-style rating, hints, solution, themes) over the bundled set and, optionally, ~40,000 puzzles sampled from the Lichess puzzle database
+  (one click inside the app downloads it), plus **My mistakes**: every blunder/mistake/miss of yours with one clear answer becomes a puzzle.
+- **Analysis board** with live, unlimited-depth engine lines.
+- **Maximum strength by default**: Settings has presets *Quick (d18) / Standard (d24) / Deep (d30) / Maximum (d40, 3 lines)*, plus threads, hash and custom depth / time per move.
+
+```bash
+npm install
+# put the engine in engine/ (see engine/README.md), e.g. stockfish-windows-x86-64-universal.exe renamed to engine/stockfish.exe
+npm run desktop          # build + run
+npm run desktop:dev      # hot-reloading UI
+npm run desktop:pack     # a double-clickable app folder: release/win-unpacked/Blunder Check.exe (includes the engine)
+npm run e2e:desktop      # drives the real app with Playwright (after npm run desktop:build)
+```
+
+The packaged app keeps Electron's executable unmodified (`asar: false`, no icon patching) so it still starts on PCs whose Windows Device Guard / App Control only allows signed binaries.
+
+Where things live: `electron/` (main process: engine host, file store, Lichess puzzle import), `src/desktop/` (the UI), `src/review/` (classification, accuracy,
+puzzles, opening book), `src/engine/` (shared UCI wrapper, extended with time caps, MultiPV streaming and cancel).
+
 ## What's in the box
 
 | Area | Where |

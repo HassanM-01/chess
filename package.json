@@ -25,7 +25,8 @@
     "desktop:dev": "node scripts/desktop-dev.mjs",
     "desktop:pack": "npm run desktop:build && electron-builder --dir",
     "build:openings": "node scripts/build-openings.mjs",
-    "e2e:desktop": "playwright test --config playwright.desktop.config.ts"
+    "e2e:desktop": "playwright test --config playwright.desktop.config.ts",
+    "typecheck:desktop": "tsc --noEmit -p tsconfig.desktop.json"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.117.2",

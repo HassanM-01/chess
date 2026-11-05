@@ -1,0 +1,55 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": [
+      "ES2023",
+      "DOM",
+      "DOM.Iterable",
+      "WebWorker"
+    ],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+    "strict": true,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "isolatedModules": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "noEmit": true,
+    "allowImportingTsExtensions": false,
+    "types": [
+      "vite/client",
+      "node"
+    ],
+    "paths": {
+      "@/*": [
+        "./src/*"
+      ]
+    }
+  },
+  "include": [
+    "electron",
+    "e2e-desktop",
+    "vite.desktop.config.ts",
+    "playwright.desktop.config.ts",
+    "src/desktop",
+    "src/review",
+    "src/engine",
+    "src/chess",
+    "src/chesscom",
+    "src/components",
+    "src/db",
+    "src/data",
+    "src/coach",
+    "src/analysis",
+    "src/content",
+    "src/skill",
+    "src/puzzles",
+    "src/features/train",
+    "src/lib",
+    "src/state"
+  ]
+}

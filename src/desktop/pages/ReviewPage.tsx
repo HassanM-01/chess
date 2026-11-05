@@ -4,11 +4,13 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Chess } from '@/chess/compat';
 import { gameFens, moveNumberLabel } from '@/chess/helpers';
 import type { Color } from '@/chess/types';
-import { Board, arrowOf, arrowsOf } from '@/components/Board';
+import { Board, arrowOf, arrowsOf, type MarkKind } from '@/components/Board';
 import { reviewMoves, summarizeReview } from '@/review/classify';
 import { epWhite } from '@/review/expected';
+import { explainMove, type Explanation } from '@/review/explain';
 import { retryVerdict } from '@/review/retry';
 import { MOVE_CLASSES, type MoveClass, type MoveReview } from '@/review/types';
+import { WEAK, topWeaknesses } from '@/review/weak';
 import { CLASS_META, ClassIcon, formatEval } from '../ui/classInfo';
 import { EvalBar, EvalGraph } from '../ui/charts';
 import { LiveEngine } from '../ui/LiveEngine';
@@ -70,6 +72,20 @@ export function ReviewPage(): JSX.Element {
   const moves = useMemo(() => (game ? reviewMoves(game.startFen, game.movesUci, positions) : []), [game, positions]);
   const summary = useMemo(() => (positions.length > 1 ? summarizeReview(moves, positions) : null), [moves, positions]);
   const fens = useMemo(() => (game ? gameFens(game.startFen, game.movesUci) : []), [game]);
+  /** a plain-English explanation for each reviewed move */
+  const exps = useMemo<(Explanation | null)[]>(
+    () => moves.map((mv) => (positions[mv.ply + 1] ? explainMove({ fenBefore: fens[mv.ply], move: mv, before: positions[mv.ply], after: positions[mv.ply + 1], prev: moves[mv.ply - 1], userColor: game?.userColor ?? null }) : null)),
+    [moves, positions, fens, game?.userColor],
+  );
+  /** what the user's own weak moves in this game have in common */
+  const weakHere = useMemo(() => {
+    const tags: Record<string, number> = {};
+    for (const mv of moves) {
+      if (!BAD.includes(mv.cls) || (game?.userColor && mv.color !== game.userColor)) continue;
+      for (const t of exps[mv.ply]?.tags ?? []) tags[t] = (tags[t] ?? 0) + 1;
+    }
+    return topWeaknesses(tags, 3);
+  }, [moves, exps, game?.userColor]);
 
   const last = game ? game.movesUci.length : 0;
   const go = (p: number): void => {
@@ -108,11 +124,18 @@ export function ReviewPage(): JSX.Element {
   const evalLine = positions[ply]?.lines[0];
   const evalLabel = evalLine ? formatEval(evalLine.cp, evalLine.mate) : '0.00';
 
+  const ex = m ? exps[m.ply] : null;
   const arrows = arrowsOf();
+  const marks: Record<string, MarkKind> = {};
   const badges: { square: string; color: string; glyph: string }[] = [];
   if (m) {
     badges.push({ square: m.uci.slice(2, 4), color: CLASS_META[m.cls].color, glyph: CLASS_META[m.cls].glyph });
-    if (showBest && m.bestUci && m.bestUci !== m.uci && SHOW_BEST.includes(m.cls)) arrows.push(...arrowsOf(arrowOf(m.bestUci, 'good')));
+    if (showBest && m.bestUci && m.bestUci !== m.uci && SHOW_BEST.includes(m.cls)) {
+      arrows.push(...arrowsOf(arrowOf(m.bestUci, 'good')));
+      // the opponent's punishing reply, and the squares involved
+      if (ex?.punish) arrows.push(...arrowsOf(arrowOf(ex.punish, 'bad')));
+      for (const sq of ex?.danger ?? []) marks[sq] = 'bad';
+    }
   }
   const retryMove = retry ? moves[retry.ply] : undefined;
   // While retrying, the board shows the position BEFORE the mistake and the player tries again.
@@ -161,6 +184,7 @@ export function ReviewPage(): JSX.Element {
               orientation={orientation}
               lastMove={lastMove}
               arrows={retry ? [] : arrows}
+              marks={retry ? {} : marks}
               badges={retry ? [] : badges}
               interactive={!!retry && retry.verdict !== 'best' && retry.verdict !== 'good'}
               movableColor={retryMove?.color ?? null}
@@ -246,6 +270,8 @@ export function ReviewPage(): JSX.Element {
             }}
             onRedo={() => startReview(true)}
             review={review}
+            exps={exps}
+            weak={weakHere}
           />
         ) : (
           <div className="dk-moves-pane">
@@ -260,13 +286,29 @@ export function ReviewPage(): JSX.Element {
                     </div>
                   </div>
                 </div>
-                {describe(m).body && <p className="small">{describe(m).body}</p>}
-                {m.bestLineSan.length > 0 && m.bestUci !== m.uci && <p className="small muted">Best line: {m.bestLineSan.join(' ')}</p>}
+                {ex ? (
+                  <div className="explain" data-testid="explanation">
+                    <div className="ex-headline">{ex.headline}</div>
+                    {ex.what.map((t, i) => (
+                      <p key={i} className="small">{t}</p>
+                    ))}
+                    {ex.better && (
+                      <div className="ex-better">
+                        <b className="small">Why {m.bestSan} is better</b>
+                        <p className="small">{ex.better}</p>
+                      </div>
+                    )}
+                    {ex.lesson && <div className="remember small">💡 {ex.lesson}</div>}
+                  </div>
+                ) : (
+                  describe(m).body && <p className="small">{describe(m).body}</p>
+                )}
+                {m.bestLineSan.length > 0 && m.bestUci !== m.uci && <p className="small muted">Engine line: {m.bestLineSan.join(' ')}</p>}
                 <div className="row">
                   {m.bestUci && m.bestUci !== m.uci && BAD.includes(m.cls) && (
                     <button className="btn" onClick={() => setRetry({ ply: m.ply, verdict: null })} data-testid="retry">Retry</button>
                   )}
-                  <label className="small row"><input type="checkbox" checked={showBest} onChange={(e) => setShowBest(e.target.checked)} /> best-move arrow</label>
+                  <label className="small row"><input type="checkbox" checked={showBest} onChange={(e) => setShowBest(e.target.checked)} /> arrows (best move green, their punishment red)</label>
                 </div>
               </div>
             ) : (
@@ -356,6 +398,8 @@ function Summary({
   onJump,
   onRedo,
   review,
+  exps,
+  weak,
 }: {
   moves: MoveReview[];
   summary: ReturnType<typeof summarizeReview> | null;
@@ -364,6 +408,8 @@ function Summary({
   onJump: (ply: number) => void;
   onRedo: () => void;
   review: { engine: string; threads: number; hashMb: number; settings: { depth: number; movetimeMs: number; multipv: number } } | undefined;
+  exps: (Explanation | null)[];
+  weak: ReturnType<typeof topWeaknesses>;
 }): JSX.Element {
   if (!summary) return <div className="dk-card small muted">Start the review to see accuracy, move ratings and key moments.</div>;
   const opening = moves.find((x) => x.bookName && x.cls === 'book');
@@ -395,6 +441,20 @@ function Summary({
         </tbody>
       </table>
       {(lastBook || opening || game.opening) && <div className="small muted">Opening: {lastBook?.bookName ?? game.opening}</div>}
+      {weak.length > 0 && (
+        <div className="dk-card" data-testid="work-on">
+          <b>What to work on</b>
+          <div className="small muted">What your weak moves in this game have in common.</div>
+          {weak.map(({ tag, count }) => (
+            <div className="weak-row" key={tag}>
+              <span className="grow small">
+                <b>{WEAK[tag].label}</b> <span className="muted">×{count}</span>
+              </span>
+              <Link className="btn" to={`/puzzles?mode=${WEAK[tag].practice.mode}`}>Practise</Link>
+            </div>
+          ))}
+        </div>
+      )}
       {key.length > 0 && (
         <div className="dk-card">
           <b>Key moments</b>
@@ -404,7 +464,7 @@ function Summary({
                 <ClassIcon cls={x.cls} size={20} />
                 <span className="mvno">{x.color === 'w' ? `${Math.floor(x.ply / 2) + 1}.` : `${Math.floor(x.ply / 2) + 1}…`}</span>
                 <b>{x.san}</b>
-                <span className="muted small">{CLASS_META[x.cls].label}{BAD.includes(x.cls) && x.bestSan ? ` · best ${x.bestSan}` : ''}</span>
+                <span className="muted small">{CLASS_META[x.cls].label}{exps[x.ply] && BAD.includes(x.cls) ? ` · ${exps[x.ply]!.headline}` : BAD.includes(x.cls) && x.bestSan ? ` · best ${x.bestSan}` : ''}</span>
               </button>
             ))}
           </div>

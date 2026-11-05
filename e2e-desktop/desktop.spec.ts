@@ -65,6 +65,9 @@ test('imports a PGN, reviews it with native Stockfish and labels the moves', asy
   await page.getByRole('tab', { name: 'Moves' }).click();
   await page.locator('[data-ply="10"]').click();
   await expect(page.getByTestId('move-title')).toContainText(/Bxd1 is (a blunder|a mistake)/);
+  // the plain-English explanation: what happens, why the best move is better, and a habit to remember
+  await expect(page.getByTestId('explanation')).toContainText(/checkmate/i);
+  await expect(page.getByTestId('explanation')).toContainText(/is better/i);
   await page.screenshot({ path: join(dataDir, 'shot-blunder.png') });
   // Retry: the board goes back to before the mistake and dxe5 (the best move) must be accepted
   await page.getByTestId('retry').click();
@@ -98,6 +101,48 @@ test('puzzles page loads and offers the bundled puzzles', async () => {
   await page.getByTestId('solution').click();
   await expect(page.getByTestId('puzzle-banner')).toHaveAttribute('data-status', 'revealed');
   await expect(page.getByTestId('puzzle-rating')).not.toHaveText('1000');
+});
+
+test('training modes are built from the reviewed game and explain themselves', async () => {
+  await page.getByRole('link', { name: 'Puzzles' }).click();
+  await expect(page.getByTestId('puzzles-page')).toBeVisible();
+
+  // checkmate: the mate in 2 that came up in the game (Bxf7+ Ke7 Nd5#). Use the hints to read the move, then play it.
+  await page.getByTestId('mode-mate').click();
+  await expect(page.getByTestId('puzzle-banner')).toHaveAttribute('data-status', 'solving');
+  for (let i = 0; i < 3; i++) await page.getByTestId('hint').click();
+  const arrowAt = async (): Promise<string> => ((await page.locator('[data-arrow]').first().getAttribute('data-arrow')) ?? '').split(':')[0];
+  const play = async (uci: string): Promise<void> => {
+    await page.locator(`[data-sq="${uci.slice(0, 2)}"]`).click();
+    await page.locator(`[data-sq="${uci.slice(2, 4)}"]`).click();
+  };
+  const status = async (): Promise<string> => (await page.getByTestId('puzzle-banner').getAttribute('data-status')) ?? '';
+  // keep playing the hinted move until the puzzle is over (a mate in 2 or 3 has several moves)
+  for (let i = 0; i < 4 && (await status()) === 'solving'; i++) {
+    const move = await arrowAt();
+    await play(move);
+    await expect.poll(async () => ((await status()) !== 'solving' ? 'over' : await arrowAt()), { timeout: 8000 }).not.toBe(move);
+  }
+  await expect(page.getByTestId('puzzle-banner')).toHaveAttribute('data-status', /solved|failed/);
+  await expect(page.getByTestId('puzzle-explain')).toContainText(/checkmate/i);
+  await page.screenshot({ path: join(dataDir, 'shot-mate-puzzle.png') });
+
+  // punish: the opponent's blunder 5...Bxd1 offers a winning reply
+  await page.getByTestId('mode-punish').click();
+  await expect(page.getByTestId('puzzle-banner')).toBeVisible();
+  await page.getByTestId('solution').click();
+  await expect(page.getByTestId('puzzle-explain')).toContainText(/checkmate|best reply/i);
+
+  // safe or blunder: answer, then the explanation appears either way
+  await page.getByTestId('mode-judge').click();
+  await expect(page.getByTestId('judge-blunder')).toBeVisible();
+  await page.getByTestId('judge-blunder').click();
+  await expect(page.getByTestId('puzzle-banner')).toHaveAttribute('data-status', /solved|failed/);
+  await expect(page.getByTestId('puzzle-explain')).toBeVisible();
+  await page.screenshot({ path: join(dataDir, 'shot-judge.png') });
+
+  // the weak-spot summary shows what the games have in common
+  await expect(page.getByRole('tablist', { name: 'Training mode' })).toBeVisible();
 });
 
 test('no script errors or CSP violations happened', () => {

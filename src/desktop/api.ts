@@ -52,6 +52,13 @@ export interface DesktopApi {
     onProgress(cb: (p: { phase: string; fraction: number; count: number }) => void): () => void;
     cancel(): void;
   };
+  /** the optional AI coach; the API key is stored encrypted by the main process and never comes back to the page */
+  coach: {
+    hasKey(): Promise<boolean>;
+    setKey(key: string): Promise<void>;
+    clearKey(): Promise<void>;
+    ask(req: { system: string; messages: { role: 'user' | 'assistant'; content: string }[] }): Promise<string>;
+  };
   openExternal(url: string): void;
 }
 

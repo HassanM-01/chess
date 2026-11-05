@@ -56,6 +56,8 @@ interface PuzzleState {
   next(mode: PuzzleMode, theme: string | null): Puzzle | null;
   /** record a finished puzzle; returns the rating change */
   finish(p: Puzzle, ok: boolean): number;
+  /** lower the rating so the rated trainer serves easier puzzles (the easiest ones are rated about 500) */
+  easier(): void;
 }
 
 const rand = <T,>(xs: T[]): T => xs[Math.floor(Math.random() * xs.length)];
@@ -154,6 +156,11 @@ export const usePuzzles = create<PuzzleState>((set, get) => {
       const pool = s.poolFor(mode, theme);
       if (mode === 'rated') return pickPuzzle(pool, s.progress.rating, s.progress.seen);
       return pickFromGames(pool, s.progress);
+    },
+    easier() {
+      const pr = get().progress;
+      set({ progress: { ...pr, rating: Math.max(300, pr.rating - 250) } });
+      save();
     },
     finish(p, ok) {
       const pr = get().progress;

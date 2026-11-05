@@ -86,7 +86,7 @@ function namesFor(userColor: Color | null, mover: Color): Names {
   return { me: { sub: 'your opponent', poss: 'their', obj: 'your opponent', own: 'theirs' }, they: { sub: 'you', poss: 'your', obj: 'you', own: 'yours' } };
 }
 
-const mateIn = (l: StoredLine | undefined, who: Color): number | null => (l && l.mate != null && l.mate !== 0 && l.mate > 0 === (who === 'w') ? Math.abs(l.mate) : null);
+export const mateIn = (l: StoredLine | undefined, who: Color): number | null => (l && l.mate != null && l.mate !== 0 && l.mate > 0 === (who === 'w') ? Math.abs(l.mate) : null);
 
 /** "clearly winning", "roughly equal"... from the mover's expected points */
 export function evalWords(ep: number): string {
@@ -135,7 +135,7 @@ interface Settled {
 }
 
 /** Play `line` from `fen` and see what happens to material. The line is cut at the last move that is not a capture, so an exchange is never judged half-way. */
-function settle(fen: string, line: Uci[], color: Color, maxPlies = 8): Settled {
+export function settle(fen: string, line: Uci[], color: Color, maxPlies = 8): Settled {
   const empty: Settled = { delta: 0, worst: 0, moves: [], reliable: false, mates: false };
   let c: Chess;
   try {
@@ -259,6 +259,25 @@ function boardAfter(fen: string, u: Uci | null | undefined): { fen: string; boar
   }
 }
 
+/** Checkmates the other side would have if it were their turn right now (what they are threatening). */
+export function mateThreats(fen: string, me: Color): string[] {
+  try {
+    const parts = fen.split(' ');
+    parts[1] = me === 'w' ? 'b' : 'w';
+    parts[3] = '-';
+    const c = new Chess(parts.join(' '));
+    const out: string[] = [];
+    for (const m of c.moves({ verbose: true })) {
+      c.move(m);
+      if (c.isCheckmate()) out.push(m.san);
+      c.undo();
+    }
+    return out;
+  } catch {
+    return [];
+  }
+}
+
 /** What whatBestDoes needs: the position, who is to move and the engine's lines. `m` and `B` are only needed to describe the move actually played. */
 type BestCtx = Pick<Ctx, 'fen0' | 'b0' | 'me' | 'opp' | 'N' | 'A'> & Partial<Pick<Ctx, 'm' | 'B'>>;
 
@@ -297,10 +316,18 @@ function whatBestDoes(x: BestCtx, forPlayed: boolean): string {
     if (bb.move.from === h.square) return `${lead} moves ${N.me.poss} ${piece(h.piece.type)} on ${h.square} out of danger.`;
     if (!hangingInfo(bb.board, h.square)) return `${lead} protects ${N.me.poss} ${piece(h.piece.type)} on ${h.square}, which was under attack.`;
   }
+  // stops a checkmate they were threatening
+  const threats = mateThreats(fen0, me);
+  if (threats.length && mateThreats(bb.fen, me).length === 0) {
+    return `They were threatening checkmate with ${threats[0]}. ${lead} stops it${bb.move.san.includes('+') ? ' with check' : ''}.`;
+  }
   if (bb.move.san.includes('+')) return `${lead} gives check and keeps ${N.me.poss} initiative.`;
   const s = settle(fen0, line, me);
   if (s.reliable && s.delta >= 1) return `${lead} comes out ${pts(s.delta)} of material ahead after ${sanLine(fen0, line, s.moves.length)}.`;
   if (bb.move.flags.includes('k') || bb.move.flags.includes('q')) return `${lead} castles, tucking the king away and bringing a rook into play.`;
+  const homeRank = me === 'w' ? '1' : '8';
+  if ((bb.move.piece === 'n' || bb.move.piece === 'b') && bb.move.from[1] === homeRank) return `${lead} brings a ${piece(bb.move.piece)} into the game, where it controls more squares.`;
+  if (bb.move.piece === 'p' && ['d4', 'e4', 'd5', 'e5'].includes(bb.move.to)) return `${lead} puts a pawn in the centre, which gives ${N.me.poss} pieces room to move.`;
   return '';
 }
 

@@ -8,13 +8,18 @@ import { Board, arrowOf, arrowsOf, type MarkKind } from '@/components/Board';
 import { reviewMoves, summarizeReview } from '@/review/classify';
 import { epWhite } from '@/review/expected';
 import { explainMove, type Explanation } from '@/review/explain';
+import { moveFacts } from '@/review/coachFacts';
+import { judgeMove } from '@/review/judge';
 import { retryVerdict } from '@/review/retry';
+import { moveSteps } from '@/review/words';
 import { MOVE_CLASSES, type MoveClass, type MoveReview } from '@/review/types';
 import { WEAK, topWeaknesses } from '@/review/weak';
 import { CLASS_META, ClassIcon, formatEval } from '../ui/classInfo';
 import { EvalBar, EvalGraph } from '../ui/charts';
 import { LiveEngine } from '../ui/LiveEngine';
-import { useEngineStatus } from '../lib/desktopEngine';
+import { getEngine, useEngineStatus } from '../lib/desktopEngine';
+import { CoachBox } from '../ui/CoachBox';
+import { Steps } from '../ui/Steps';
 import { useLibrary } from '../state/library';
 import { useReviews } from '../state/reviews';
 import { useSettings } from '../state/settings';
@@ -62,7 +67,9 @@ export function ReviewPage(): JSX.Element {
   const [tab, setTab] = useState<'summary' | 'moves'>('summary');
   const [live, setLive] = useState(false);
   const [showBest, setShowBest] = useState(true);
-  const [retry, setRetry] = useState<{ ply: number; verdict: 'best' | 'good' | 'wrong' | null } | null>(null);
+  const [retry, setRetry] = useState<{ ply: number; verdict: 'best' | 'good' | 'wrong' | 'checking' | null; san?: string; why?: string[] } | null>(null);
+  /** the ply whose step-by-step breakdown is open */
+  const [stepsFor, setStepsFor] = useState<number | null>(null);
 
   useEffect(() => {
     void useReviews.getState().open(id);
@@ -168,8 +175,32 @@ export function ReviewPage(): JSX.Element {
 
   const onRetryMove = (uci: string): void => {
     if (!retry) return;
-    const v = retryVerdict(positions[retry.ply], moves[retry.ply].color, uci);
-    setRetry({ ply: retry.ply, verdict: v });
+    const at = retry.ply;
+    const v = retryVerdict(positions[at], moves[at].color, uci);
+    if (v !== 'wrong') {
+      setRetry({ ply: at, verdict: v });
+      return;
+    }
+    // Not one of the saved lines: let Stockfish judge the move you tried, so a different good move is not marked wrong.
+    setRetry({ ply: at, verdict: 'checking' });
+    void (async () => {
+      try {
+        const j = await judgeMove(getEngine(), fens[at], uci, { before: positions[at] });
+        if (!j) throw new Error('no result');
+        const ex = j.explanation;
+        // do not name the answer while the player is still trying to find it
+        const spoils = !!ex?.tags.some((t) => t.startsWith('missed-'));
+        setRetry((cur) =>
+          cur && cur.ply === at && cur.verdict === 'checking'
+            ? j.good
+              ? { ply: at, verdict: 'good', san: j.move.san, why: [j.move.bestUci === uci ? '' : `The engine's favourite was ${j.move.bestSan}, but ${j.move.san} is nearly as strong.`, ...(ex?.what ?? [])].filter(Boolean) }
+              : { ply: at, verdict: 'wrong', san: j.move.san, why: spoils ? ['There is something stronger here. Look at every check, every capture, and every piece they cannot protect.'] : (ex?.what ?? []) }
+            : cur,
+        );
+      } catch {
+        setRetry((cur) => (cur && cur.ply === at && cur.verdict === 'checking' ? { ply: at, verdict: 'wrong' } : cur));
+      }
+    })();
   };
 
   return (
@@ -186,7 +217,7 @@ export function ReviewPage(): JSX.Element {
               arrows={retry ? [] : arrows}
               marks={retry ? {} : marks}
               badges={retry ? [] : badges}
-              interactive={!!retry && retry.verdict !== 'best' && retry.verdict !== 'good'}
+              interactive={!!retry && retry.verdict !== 'best' && retry.verdict !== 'good' && retry.verdict !== 'checking'}
               movableColor={retryMove?.color ?? null}
               onMove={onRetryMove}
             />
@@ -303,10 +334,16 @@ export function ReviewPage(): JSX.Element {
                 ) : (
                   describe(m).body && <p className="small">{describe(m).body}</p>
                 )}
+                {stepsFor === m.ply && positions[m.ply + 1] && (
+                  <Steps steps={moveSteps({ fenBefore: fens[m.ply], move: m, before: positions[m.ply], after: positions[m.ply + 1], prev: moves[m.ply - 1], userColor: game.userColor })} />
+                )}
                 {m.bestLineSan.length > 0 && m.bestUci !== m.uci && <p className="small muted">Engine line: {m.bestLineSan.join(' ')}</p>}
                 <div className="row">
                   {m.bestUci && m.bestUci !== m.uci && BAD.includes(m.cls) && (
                     <button className="btn" onClick={() => setRetry({ ply: m.ply, verdict: null })} data-testid="retry">Retry</button>
+                  )}
+                  {positions[m.ply + 1] && ['inaccuracy', 'mistake', 'miss', 'blunder', 'great', 'brilliant'].includes(m.cls) && (
+                    <button className="btn" onClick={() => setStepsFor(stepsFor === m.ply ? null : m.ply)} data-testid="break-down">{stepsFor === m.ply ? 'Hide the step-by-step' : 'Break it down step by step'}</button>
                   )}
                   <label className="small row"><input type="checkbox" checked={showBest} onChange={(e) => setShowBest(e.target.checked)} /> arrows (best move green, their punishment red)</label>
                 </div>
@@ -314,14 +351,22 @@ export function ReviewPage(): JSX.Element {
             ) : (
               <div className="dk-card small muted">Step through the game with the arrow keys. Click a move to jump to it.</div>
             )}
+            {m && !retry && positions[m.ply + 1] && (
+              <CoachBox
+                resetKey={`${id}:${m.ply}`}
+                facts={moveFacts({ fenBefore: fens[m.ply], move: m, before: positions[m.ply], after: positions[m.ply + 1], prev: moves[m.ply - 1], userColor: game.userColor })}
+              />
+            )}
             {retry && retryMove && (
               <div className={`dk-card retry ${retry.verdict === 'wrong' ? 'bad' : retry.verdict ? 'good' : ''}`} data-testid="retry-card">
                 <b>
                   {retry.verdict === null && `Find a better move for ${retryMove.color === 'w' ? 'White' : 'Black'}.`}
+                  {retry.verdict === 'checking' && 'Checking your move with Stockfish…'}
                   {retry.verdict === 'best' && `Yes! ${retryMove.bestSan} is the best move.`}
-                  {retry.verdict === 'good' && 'That works too: the engine rates it nearly as high as the best move.'}
-                  {retry.verdict === 'wrong' && 'That is not it. Try again, or look at the solution.'}
+                  {retry.verdict === 'good' && `${retry.san ? `${retry.san} is` : 'That is'} also a good move!`}
+                  {retry.verdict === 'wrong' && `${retry.san ? `${retry.san} does not work.` : 'That is not it.'} Try again, or look at the solution.`}
                 </b>
+                {retry.why?.map((t, i) => <p key={i} className="small">{t}</p>)}
                 <div className="row">
                   {retry.verdict === 'wrong' && <button className="btn" onClick={() => setRetry({ ply: retry.ply, verdict: null })}>Try again</button>}
                   <button className="btn" onClick={() => setRetry(null)}>{retry.verdict === 'best' || retry.verdict === 'good' ? 'Continue' : 'Show solution'}</button>

@@ -3,16 +3,21 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Chess, uciMove } from '@/chess/compat';
-import { pvSan } from '@/chess/helpers';
+import { pvSan, sanOf } from '@/chess/helpers';
 import type { Color } from '@/chess/types';
 import { Board, arrowOf, arrowsOf, type Arrow, type MarkKind } from '@/components/Board';
 import { pieceHint, positionHint } from '@/features/train/hints';
 import { explainBestMove } from '@/review/explain';
+import { puzzleFacts } from '@/review/coachFacts';
+import { judgeMove } from '@/review/judge';
 import { checkMove, sideOf, type Puzzle } from '@/review/puzzles';
 import { toPosAnalysis } from '@/review/runReview';
+import { bestMoveSteps, type Step } from '@/review/words';
 import { WEAK, topWeaknesses } from '@/review/weak';
 import { getEngine } from '../lib/desktopEngine';
 import { useLibrary } from '../state/library';
+import { CoachBox } from '../ui/CoachBox';
+import { Steps, NoteCard, type TryNote } from '../ui/Steps';
 import { usePuzzles, type PuzzleMode } from '../state/puzzles';
 
 type Status = 'solving' | 'solved' | 'failed' | 'revealed';
@@ -35,6 +40,12 @@ interface Run {
   picked: string[];
   /** safe or blunder: the answer given */
   answer: 'blunder' | 'safe' | null;
+  /** a move you tried that is not the listed answer: Stockfish is judging it (the move's name) */
+  checking: string | null;
+  /** the verdict on a move you tried: also good, or why it does not work */
+  note: TryNote | null;
+  /** the last move you tried that was not the listed answer */
+  tried: { san: string; good: boolean; reasons: string[] } | null;
 }
 
 const THEME_NAMES: Record<string, string> = {
@@ -80,7 +91,7 @@ const MODES: { key: PuzzleMode; label: string; blurb: string }[] = [
 ];
 
 function fresh(p: Puzzle): Run {
-  return { puzzle: p, fen: p.fen, step: 0, status: 'solving', tainted: false, wrong: 0, hint: 0, delta: null, last: p.lastMove ?? null, startedAt: Date.now(), finishedAt: null, feedback: 'idle', picked: [], answer: null };
+  return { puzzle: p, fen: p.fen, step: 0, status: 'solving', tainted: false, wrong: 0, hint: 0, delta: null, last: p.lastMove ?? null, startedAt: Date.now(), finishedAt: null, feedback: 'idle', picked: [], answer: null, checking: null, note: null, tried: null };
 }
 
 function applyUci(fen: string, uci: string): string | null {
@@ -111,7 +122,9 @@ export function PuzzlesPage(): JSX.Element {
   const [touched, setTouched] = useState(startMode !== 'rated');
   const [theme, setTheme] = useState<string | null>(null);
   const [run, setRun] = useState<Run | null>(null);
-  const [live, setLive] = useState<{ id: string; text: string; busy: boolean } | null>(null);
+  const [live, setLive] = useState<{ id: string; text: string; steps: Step[]; busy: boolean } | null>(null);
+  const [showSteps, setShowSteps] = useState(false);
+  const runRef = useRef<Run | null>(null);
   const [tick, setTick] = useState(0);
   const timers = useRef<number[]>([]);
   const [imp, setImp] = useState<{ busy: boolean; phase: string; fraction: number; count: number; error: string }>({ busy: false, phase: '', fraction: 0, count: 0, error: '' });
@@ -138,6 +151,7 @@ export function PuzzlesPage(): JSX.Element {
       timers.current = [];
       const p = usePuzzles.getState().next(m, th);
       setLive(null);
+      setShowSteps(false);
       setRun(p ? fresh(p) : null);
     },
     [mode, theme],
@@ -173,20 +187,30 @@ export function PuzzlesPage(): JSX.Element {
   const kind = p?.kind ?? 'solve';
   const solver: Color = run ? sideOf(run.puzzle.fen) : 'w';
 
-  // A puzzle without a written explanation (the rated ones) is explained by running the engine on it, right now.
   useEffect(() => {
-    if (!run || run.status === 'solving' || kind !== 'solve' || run.puzzle.explain?.length) return;
+    runRef.current = run;
+  });
+
+  // When a puzzle ends, Stockfish works out the plain explanation (if there is none yet) and the step-by-step breakdown.
+  useEffect(() => {
+    if (!run || run.status === 'solving' || kind !== 'solve') return;
     const puz = run.puzzle;
     let dead = false;
-    setLive({ id: puz.id, text: '', busy: true });
+    setLive({ id: puz.id, text: '', steps: [], busy: true });
     void (async () => {
       try {
-        const e = await getEngine().run(puz.fen, { depth: 20, movetimeMs: 1500, multipv: 2, priority: 'interactive' });
+        const e = await getEngine().run(puz.fen, { depth: 20, movetimeMs: 1500, multipv: 3, priority: 'interactive' });
         const pos = toPosAnalysis(e, new Chess(puz.fen).moves().length);
-        const text = pos.lines[0]?.pv[0] === puz.solution[0] ? explainBestMove(puz.fen, pos) : '';
-        if (!dead) setLive({ id: puz.id, text, busy: false });
+        const idx = pos.lines.findIndex((l) => l.pv[0] === puz.solution[0]);
+        if (idx < 0) {
+          if (!dead) setLive({ id: puz.id, text: '', steps: [], busy: false });
+          return;
+        }
+        const mine = { ...pos, lines: [pos.lines[idx], ...pos.lines.filter((_, i) => i !== idx)] };
+        const text = puz.explain?.length ? '' : explainBestMove(puz.fen, mine);
+        if (!dead) setLive({ id: puz.id, text, steps: bestMoveSteps(puz.fen, mine), busy: false });
       } catch {
-        if (!dead) setLive({ id: puz.id, text: '', busy: false });
+        if (!dead) setLive({ id: puz.id, text: '', steps: [], busy: false });
       }
     })();
     return () => {
@@ -195,13 +219,51 @@ export function PuzzlesPage(): JSX.Element {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [run?.puzzle.id, run?.status]);
 
+  // You played something other than the listed answer: let Stockfish judge it. A move that is also good is accepted.
+  const tryOther = async (r0: Run, uci: string): Promise<void> => {
+    const san = sanOf(r0.fen, uci);
+    const after = applyUci(r0.fen, uci);
+    setRun({ ...r0, fen: after ?? r0.fen, last: uci, checking: san, note: null, feedback: 'idle' });
+    let j: Awaited<ReturnType<typeof judgeMove>> = null;
+    try {
+      j = await judgeMove(getEngine(), r0.fen, uci, { depth: 20, movetimeMs: 1500 });
+    } catch {
+      j = null;
+    }
+    const cur = runRef.current;
+    if (!cur || cur.puzzle.id !== r0.puzzle.id || cur.checking !== san) return; // you moved on to another puzzle
+    const mateOnly = r0.puzzle.themes.some((t) => /^mateIn|^mate$/.test(t));
+    const ex = j?.explanation ?? null;
+    const expected = r0.puzzle.solution[r0.step];
+    if (j && j.good && (!mateOnly || j.keepsMate)) {
+      const lines = [
+        j.move.bestUci === uci ? `${san} is the engine's top choice too.` : `The engine's favourite was ${j.move.bestSan}, but ${san} is nearly as strong.`,
+        ...(ex ? ex.what : []),
+        `The puzzle's own answer was ${sanOf(r0.fen, expected)}.`,
+      ];
+      setRun(finish({ ...cur, fen: after ?? cur.fen, last: uci, checking: null, tried: { san, good: true, reasons: ex?.what ?? [] }, note: { tone: 'good', title: `${san} is also a good move!`, lines }, feedback: 'right' }, !cur.tainted, cur.tainted ? 'failed' : 'solved'));
+      return;
+    }
+    // Do not give the answer away while the puzzle is still open: say why this move fails, not what to play instead.
+    const spoils = !!ex?.tags.some((t) => t.startsWith('missed-'));
+    let note: TryNote | null = null;
+    if (j && mateOnly && j.good) {
+      note = { tone: 'bad', title: `${san} is decent, but there is checkmate`, lines: ['This keeps your advantage, but the position has a forced checkmate. Look for a check that leaves the king nowhere to go.'] };
+    } else if (j && ex && !spoils) {
+      note = { tone: 'bad', title: `Why ${san} does not work`, lines: ex.what, lesson: ex.lesson };
+    } else if (j) {
+      note = { tone: 'bad', title: `${san} lets a better chance go`, lines: ['It is not a disaster, but there is something stronger here. Look at every check, every capture, and every piece they cannot protect.'] };
+    }
+    setRun({ ...cur, fen: r0.fen, last: r0.last, checking: null, tainted: true, wrong: cur.wrong + 1, feedback: 'wrong', note, tried: { san, good: false, reasons: ex?.what ?? [] } });
+    later(() => setRun((r) => (r ? { ...r, feedback: 'idle' } : r)), 900);
+  };
+
   // ---- solve: play the moves --------------------------------------------------------------------------------------
   const onMove = (uci: string): void => {
-    if (!run || run.status !== 'solving' || kind !== 'solve') return;
+    if (!run || run.status !== 'solving' || kind !== 'solve' || run.checking) return;
     const res = checkMove(run.puzzle, run.fen, run.step, uci);
     if (res === 'wrong') {
-      setRun({ ...run, tainted: true, wrong: run.wrong + 1, feedback: 'wrong' });
-      later(() => setRun((r) => (r ? { ...r, feedback: 'idle' } : r)), 900);
+      void tryOther(run, uci);
       return;
     }
     const c = new Chess(run.fen);
@@ -209,7 +271,7 @@ export function PuzzlesPage(): JSX.Element {
     const mates = c.isCheckmate();
     const done = mates || run.step + 1 >= run.puzzle.solution.length || res === 'alt';
     if (done) {
-      setRun(finish({ ...run, fen: c.fen(), last: uci, feedback: 'right' }, !run.tainted, run.tainted ? 'failed' : 'solved'));
+      setRun(finish({ ...run, fen: c.fen(), last: uci, feedback: 'right', note: null }, !run.tainted, run.tainted ? 'failed' : 'solved'));
       return;
     }
     const reply = run.puzzle.solution[run.step + 1];
@@ -225,8 +287,8 @@ export function PuzzlesPage(): JSX.Element {
   };
 
   const showSolution = (): void => {
-    if (!run || run.status !== 'solving' || kind !== 'solve') return;
-    setRun(finish({ ...run, tainted: true }, false, 'revealed'));
+    if (!run || run.status !== 'solving' || kind !== 'solve' || run.checking) return;
+    setRun(finish({ ...run, tainted: true, note: null }, false, 'revealed'));
     let fen = run.fen;
     run.puzzle.solution.slice(run.step).forEach((u, i) => {
       later(() => {
@@ -239,7 +301,7 @@ export function PuzzlesPage(): JSX.Element {
   };
 
   const hint = (): void => {
-    if (!run || run.status !== 'solving' || kind !== 'solve') return;
+    if (!run || run.status !== 'solving' || kind !== 'solve' || run.checking) return;
     setRun({ ...run, tainted: true, hint: Math.min(3, run.hint + 1) as 1 | 2 | 3 });
   };
 
@@ -329,6 +391,7 @@ export function PuzzlesPage(): JSX.Element {
       if (run.status === 'solving') return { cls: '', text: `${who} plays ${j.san}. Is that a blunder, or a safe move?` };
       return run.status === 'solved' ? { cls: 'good', text: `Correct! ${j.san} was ${j.verdict === 'blunder' ? 'a blunder' : 'safe'}.` } : { cls: 'bad', text: `Not quite. ${j.san} was ${j.verdict === 'blunder' ? 'a blunder' : 'a safe move'}.` };
     }
+    if (run.checking) return { cls: '', text: `Checking ${run.checking} with Stockfish…` };
     if (run.status === 'solving') return { cls: run.feedback === 'wrong' ? 'bad' : '', text: run.feedback === 'wrong' ? 'That is not the move. Try again.' : run.step === 0 ? 'Find the best move.' : 'Good. Keep going.' };
     if (run.status === 'solved') return { cls: 'good', text: `Puzzle solved!${run.delta ? ` ${run.delta > 0 ? '+' : ''}${run.delta}` : ''}` };
     if (run.status === 'failed') return { cls: 'bad', text: `Solved, but not cleanly.${run.delta ? ` ${run.delta}` : ''}` };
@@ -357,7 +420,7 @@ export function PuzzlesPage(): JSX.Element {
             <Board
               fen={run.fen}
               orientation={solver}
-              interactive={run.status === 'solving' && kind === 'solve' && sideOf(run.fen) === solver}
+              interactive={run.status === 'solving' && kind === 'solve' && !run.checking && sideOf(run.fen) === solver}
               movableColor={solver}
               lastMove={run.last}
               marks={marks}
@@ -393,8 +456,8 @@ export function PuzzlesPage(): JSX.Element {
         <div className="dk-controls">
           {kind === 'solve' && (
             <>
-              <button className="btn" onClick={hint} disabled={!run || run.status !== 'solving' || run.hint >= 3} data-testid="hint">Hint</button>
-              <button className="btn" onClick={showSolution} disabled={!run || run.status !== 'solving'} data-testid="solution">Solution</button>
+              <button className="btn" onClick={hint} disabled={!run || run.status !== 'solving' || run.hint >= 3 || !!run.checking} data-testid="hint">Hint</button>
+              <button className="btn" onClick={showSolution} disabled={!run || run.status !== 'solving' || !!run.checking} data-testid="solution">Solution</button>
             </>
           )}
           {kind === 'threat' && run?.status === 'solving' && (
@@ -424,8 +487,12 @@ export function PuzzlesPage(): JSX.Element {
             <span>Streak <b>{pr.streak}</b></span>
             <span>Best <b>{pr.bestStreak}</b></span>
           </div>
+          {mode === 'rated' && pr.rating > 400 && (
+            <button className="linklike small" onClick={() => usePuzzles.getState().easier()} data-testid="easier">Too hard? Give me easier puzzles</button>
+          )}
         </div>
 
+        {run?.note && <NoteCard note={run.note} />}
         {over && run && (
           <div className="dk-card explain-card" data-testid="puzzle-explain">
             <b>Why</b>
@@ -433,11 +500,23 @@ export function PuzzlesPage(): JSX.Element {
             {live?.id === run.puzzle.id && live.busy && <p className="small muted">The engine is working out why…</p>}
             {live?.id === run.puzzle.id && live.text && <p className="small">{live.text}</p>}
             {kind === 'solve' && !run.puzzle.explain?.length && !(live?.id === run.puzzle.id && live.text) && !(live?.busy) && sol && <p className="small muted">Solution: {sol || pvSan(run.puzzle.fen, run.puzzle.solution, 6).join(' ')}</p>}
+            {kind === 'solve' && live?.id === run.puzzle.id && live.steps.length > 0 && (
+              <>
+                <button className="btn" onClick={() => setShowSteps((v) => !v)} data-testid="show-steps">{showSteps ? 'Hide the step-by-step' : 'Break it down step by step'}</button>
+                {showSteps && <Steps steps={live.steps} />}
+              </>
+            )}
             {run.puzzle.lesson && <div className="remember small">💡 {run.puzzle.lesson}</div>}
             {run.puzzle.themes.length > 0 && <div className="small muted">Themes: {run.puzzle.themes.filter((t) => !HIDDEN_THEMES.has(t) || run.puzzle.source !== 'game').map((t) => THEME_NAMES[t] ?? t).join(', ')}</div>}
           </div>
         )}
 
+        {run && kind === 'solve' && (over || run.tried) && (
+          <CoachBox
+            resetKey={`${run.puzzle.id}:${over ? 'done' : run.wrong}`}
+            facts={puzzleFacts({ fen: run.puzzle.fen, themes: run.puzzle.themes.map((t) => THEME_NAMES[t] ?? t), solution: run.puzzle.solution, explain: [...(run.puzzle.explain ?? []), ...(live?.id === run.puzzle.id && live.text ? [live.text] : [])], steps: live?.id === run.puzzle.id ? live.steps : undefined, tried: run.tried ?? undefined })}
+          />
+        )}
         {run?.puzzle.from && (
           <div className="dk-card small">
             {run.puzzle.game && (

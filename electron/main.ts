@@ -5,6 +5,7 @@ import { readFileSync } from 'node:fs';
 import { readFile, stat } from 'node:fs/promises';
 import os from 'node:os';
 import { extname, join, normalize, resolve, sep } from 'node:path';
+import * as coach from './coach';
 import { EngineHost } from './engineHost';
 import { downloadLichessPuzzles } from './lichessPuzzles';
 import { JsonStore } from './store';
@@ -181,9 +182,15 @@ function registerIpc(): void {
     return { count: rows.length };
   }));
 
+  // the optional AI coach: the key stays in this process
+  ipcMain.handle('coach:hasKey', guardInvoke(() => coach.hasKey()));
+  ipcMain.handle('coach:setKey', guardInvoke((key: unknown) => coach.setKey(key)));
+  ipcMain.handle('coach:clearKey', guardInvoke(() => coach.clearKey()));
+  ipcMain.handle('coach:ask', guardInvoke((req: unknown) => coach.ask(req)));
+
   ipcMain.on('app:openExternal', (e, url: unknown) => {
     if (!trusted(e) || typeof url !== 'string') return;
-    if (/^https:\/\/([a-z0-9-]+\.)?(chess\.com|lichess\.org|github\.com)\//i.test(url)) void shell.openExternal(url);
+    if (/^https:\/\/([a-z0-9-]+\.)?(chess\.com|lichess\.org|github\.com|anthropic\.com)\//i.test(url)) void shell.openExternal(url);
   });
 }
 

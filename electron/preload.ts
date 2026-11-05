@@ -31,6 +31,12 @@ const api: DesktopApi = {
     onProgress: (cb) => listen('puzzles:progress', cb),
     cancel: () => ipcRenderer.send('puzzles:cancel'),
   },
+  coach: {
+    hasKey: () => ipcRenderer.invoke('coach:hasKey'),
+    setKey: (key) => ipcRenderer.invoke('coach:setKey', key),
+    clearKey: () => ipcRenderer.invoke('coach:clearKey'),
+    ask: (req) => ipcRenderer.invoke('coach:ask', req),
+  },
   openExternal: (url) => ipcRenderer.send('app:openExternal', url),
 };
 

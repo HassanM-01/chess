@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { PRESETS, type PresetKey } from '@/review/presets';
 import type { SystemInfo } from '../api';
 import { applyEngineSettings, getEngine, useEngineStatus } from '../lib/desktopEngine';
+import { askCoachTest } from '../lib/coachTest';
+import { removeCoachKey, saveCoachKey, useCoachKey } from '../lib/coach';
 import { getSystem, useSettings } from '../state/settings';
 
 const HASH_CHOICES = [256, 512, 1024, 2048, 4096, 8192, 12288, 16384];
@@ -12,6 +14,10 @@ export function SettingsPage(): JSX.Element {
   const [sys, setSys] = useState<SystemInfo | null>(null);
   const [path, setPath] = useState<{ path: string; found: boolean } | null>(null);
   const [note, setNote] = useState('');
+  const hasKey = useCoachKey();
+  const [keyText, setKeyText] = useState('');
+  const [coachNote, setCoachNote] = useState<{ ok: boolean; text: string } | null>(null);
+  const [coachBusy, setCoachBusy] = useState(false);
 
   useEffect(() => {
     void getSystem().then(setSys);
@@ -101,6 +107,50 @@ export function SettingsPage(): JSX.Element {
           Each position is searched until it reaches the target depth or the time limit, whichever comes first. Two or more lines are needed to spot Great moves and to build puzzles.
           Changing this only affects reviews you start afterwards.
         </p>
+      </div>
+
+      <div className="dk-card stack-s" data-testid="coach-settings">
+        <h3>AI coach (optional)</h3>
+        <p className="small muted">
+          The coach explains a move or puzzle in simple words and answers follow-up questions. It only talks about what Stockfish has already confirmed, so it cannot make up moves.
+          It uses <b>your own Anthropic API key</b> (made at console.anthropic.com; this is separate from a Claude.ai subscription and is billed by Anthropic per question, usually a small fraction of a cent to a few cents).
+        </p>
+        <p className="small muted">
+          When you press "Ask the coach", the position, the moves and the engine's analysis of that one move or puzzle are sent to Anthropic. Your username and your other games are not sent.
+          The key is stored encrypted on this computer and is never shown again.
+        </p>
+        <button className="linklike small" onClick={() => window.desktop?.openExternal('https://console.anthropic.com/settings/keys')}>Open the Anthropic page where keys are made</button>
+        {hasKey ? (
+          <div className="row">
+            <span className="pill good" data-testid="coach-key-saved">A key is saved</span>
+            <button className="btn" onClick={() => { void removeCoachKey(); setCoachNote(null); }}>Remove the key</button>
+          </div>
+        ) : (
+          <div className="row">
+            <input className="grow" type="password" autoComplete="off" spellCheck={false} placeholder="sk-ant-..." value={keyText} onChange={(e) => setKeyText(e.target.value)} data-testid="coach-key-input" />
+            <button
+              className="btn primary"
+              disabled={!keyText.trim() || coachBusy}
+              data-testid="coach-key-save"
+              onClick={async () => {
+                setCoachBusy(true);
+                setCoachNote(null);
+                try {
+                  await saveCoachKey(keyText);
+                  setKeyText('');
+                  setCoachNote(await askCoachTest());
+                } catch (e) {
+                  setCoachNote({ ok: false, text: (e instanceof Error ? e.message : String(e)).replace(/^Error invoking remote method '[^']+': (Error: )?/, '') });
+                } finally {
+                  setCoachBusy(false);
+                }
+              }}
+            >
+              {coachBusy ? 'Testing…' : 'Save and test'}
+            </button>
+          </div>
+        )}
+        {coachNote && <div className={coachNote.ok ? 'small' : 'err small'}>{coachNote.text}</div>}
       </div>
 
       <div className="dk-card stack-s">

@@ -126,6 +126,13 @@ input[type=checkbox]{width:auto;accent-color:var(--accent)}
 .explain p{margin:0}
 .ex-headline{font-weight:800;font-size:15px}
 .ex-better{background:var(--surface2);border-left:3px solid var(--good);border-radius:6px;padding:8px 10px;display:flex;flex-direction:column;gap:4px}
+.note-card{gap:6px;border-left:4px solid var(--warn)}
+.note-card.good{border-left-color:var(--good);background:var(--good-soft)}
+.note-card.bad{border-left-color:var(--bad)}
+.note-card p{margin:0}
+.steps{display:flex;flex-direction:column;gap:10px}
+.step{display:flex;flex-direction:column;gap:3px;background:var(--surface2);border-radius:8px;padding:8px 10px}
+.step p{margin:0}
 .remember{background:var(--accent-soft);border-radius:8px;padding:8px 10px;line-height:1.4}
 .hint-card{background:var(--warn-soft);border-radius:10px;padding:10px 12px}
 .puzzle-context{text-align:center}
@@ -142,3 +149,7 @@ input[type=checkbox]{width:auto;accent-color:var(--accent)}
 .weak-row{display:flex;gap:8px;align-items:center}
 .btn.bad-btn{background:var(--bad-soft);color:var(--ink)}
 .btn.good-btn{background:var(--good-soft);color:var(--ink)}
+.coach-box{gap:8px;border-left:4px solid var(--accent)}
+.coach-turn{margin:0;white-space:pre-wrap;line-height:1.45}
+.coach-turn.user{color:var(--ink2)}
+.coach-box .row{display:flex;gap:8px}

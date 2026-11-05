@@ -16,3 +16,10 @@ dev-dist
 blunder-check-starter.zip
 e2e/.auth
 .claude/scheduled_tasks.lock
+
+# desktop app
+electron-dist
+dist-desktop
+release
+engine/*
+!engine/README.md

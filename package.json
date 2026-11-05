@@ -17,7 +17,16 @@
     "prebuild": "node scripts/copy-engine.mjs",
     "postinstall": "node scripts/copy-engine.mjs",
     "pretest": "node scripts/copy-engine.mjs",
-    "dev:local": "node scripts/dev-local.mjs"
+    "dev:local": "node scripts/dev-local.mjs",
+    "desktop:build:ui": "vite build --config vite.desktop.config.ts",
+    "desktop:build:main": "node scripts/build-electron.mjs",
+    "desktop:build": "npm run desktop:build:main && npm run desktop:build:ui",
+    "desktop": "npm run desktop:build && electron .",
+    "desktop:dev": "node scripts/desktop-dev.mjs",
+    "desktop:pack": "npm run desktop:build && electron-builder --dir",
+    "build:openings": "node scripts/build-openings.mjs",
+    "e2e:desktop": "playwright test --config playwright.desktop.config.ts",
+    "typecheck:desktop": "tsc --noEmit -p tsconfig.desktop.json"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.117.2",
@@ -36,13 +45,53 @@
     "@types/react-dom": "^18.3.7",
     "@vercel/node": "^20.0.0",
     "@vitejs/plugin-react": "^6.1.2",
+    "concurrently": "^10.0.6",
+    "electron": "^45.2.3",
+    "electron-builder": "^26.18.0",
+    "esbuild": "^0.28.2",
     "jsdom": "^30.1.2",
     "tsx": "^4.23.15",
     "typescript": "^7.0.2",
     "vite": "^8.3.2",
     "vite-plugin-pwa": "^2.0.0",
     "vitest": "^5.0.3",
+    "wait-on": "^9.5.1",
     "workbox-build": "^7.4.1",
     "workbox-window": "^7.4.1"
+  },
+  "main": "electron-dist/main.cjs",
+  "description": "Blunder Check: chess game review and puzzles, with native Stockfish (web app + desktop app)",
+  "author": "HassanM-01",
+  "build": {
+    "appId": "com.hassanm.blundercheck",
+    "productName": "Blunder Check",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "electron-dist/**",
+      "dist-desktop/**",
+      "package.json",
+      "!node_modules/**"
+    ],
+    "extraResources": [
+      {
+        "from": "engine",
+        "to": "engine",
+        "filter": [
+          "stockfish*",
+          "Copying.txt",
+          "AUTHORS"
+        ]
+      }
+    ],
+    "asar": false,
+    "win": {
+      "target": [
+        "dir"
+      ],
+      "signAndEditExecutable": false
+    },
+    "electronDist": "node_modules/electron/dist"
   }
 }

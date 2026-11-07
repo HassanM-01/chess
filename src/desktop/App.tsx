@@ -4,6 +4,7 @@ import { PieceSprite } from '@/components/PieceSprite';
 import { getEngine, useEngineStatus } from './lib/desktopEngine';
 import { AnalysisPage } from './pages/AnalysisPage';
 import { LibraryPage } from './pages/LibraryPage';
+import { PlayPage } from './pages/PlayPage';
 import { PuzzlesPage } from './pages/PuzzlesPage';
 import { ReviewPage } from './pages/ReviewPage';
 import { SettingsPage } from './pages/SettingsPage';
@@ -26,6 +27,7 @@ function Sidebar(): JSX.Element {
         <span className="mark" aria-hidden="true">♞</span> Blunder Check
       </div>
       <NavLink to="/" end className="dk-link">Games</NavLink>
+      <NavLink to="/play" className="dk-link">Play</NavLink>
       <NavLink to="/puzzles" className="dk-link">Puzzles</NavLink>
       <NavLink to="/analysis" className="dk-link">Analysis</NavLink>
       <NavLink to="/settings" className="dk-link">Settings</NavLink>
@@ -77,6 +79,7 @@ export function DesktopApp(): JSX.Element {
           <Routes>
             <Route path="/" element={<LibraryPage />} />
             <Route path="/review/:id" element={<ReviewPage />} />
+            <Route path="/play" element={<PlayPage />} />
             <Route path="/puzzles" element={<PuzzlesPage />} />
             <Route path="/analysis" element={<AnalysisPage />} />
             <Route path="/settings" element={<SettingsPage />} />

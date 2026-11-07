@@ -153,3 +153,20 @@ input[type=checkbox]{width:auto;accent-color:var(--accent)}
 .coach-turn{margin:0;white-space:pre-wrap;line-height:1.45}
 .coach-turn.user{color:var(--ink2)}
 .coach-box .row{display:flex;gap:8px}
+
+/* Play: menu and game */
+.seg{display:flex;flex-wrap:wrap;gap:4px;background:var(--surface2);border-radius:10px;padding:4px;align-self:flex-start}
+.seg button{appearance:none;border:0;background:transparent;color:var(--ink2);font:inherit;font-weight:700;padding:7px 12px;border-radius:7px;cursor:pointer}
+.seg button:hover{color:var(--ink)}
+.seg button.on{background:var(--accent);color:var(--accent-ink)}
+.pl-tabs{display:flex;gap:4px;border-bottom:1px solid var(--line)}
+.pl-tab{appearance:none;border:0;border-bottom:3px solid transparent;background:transparent;color:var(--ink2);font:inherit;font-weight:700;font-size:15px;padding:10px 16px;cursor:pointer}
+.pl-tab:hover{color:var(--ink)}
+.pl-tab.on{color:var(--ink);border-bottom-color:var(--accent)}
+.scenario-card{flex-direction:row;align-items:center;gap:16px}
+.drill-row{display:flex;align-items:center;gap:10px;padding:6px 8px;border-radius:8px;background:var(--surface2)}
+.heads{margin:0;line-height:1.4}
+.tips{margin:6px 0 0;padding-left:18px;display:flex;flex-direction:column;gap:6px}
+.pm{display:inline-flex;align-items:center;gap:3px;margin-right:6px;font-weight:700;white-space:nowrap}
+.spinner.tiny{width:16px;height:16px;border-width:3px}
+.move-card.inaccuracy{border-color:#f7c631}

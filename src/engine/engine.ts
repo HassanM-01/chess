@@ -246,7 +246,14 @@ export class Engine {
       const r = await this.exec(job);
       if (r === ABORTED) {
         job.aborted = false;
-        this.lo.unshift(job); // retry later, ahead of the other background work
+        if (job.stopped) {
+          // The caller gave up on this search (AbortSignal) while a newer request was also interrupting it. Running it
+          // again would be pointless, and because it is already marked stopped it could never be interrupted again:
+          // an endless live analysis would block every request after it.
+          job.rej(new Error('aborted'));
+        } else {
+          this.lo.unshift(job); // retry later, ahead of the other background work
+        }
       } else {
         job.res(r);
       }

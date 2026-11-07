@@ -31,6 +31,12 @@ export interface JudgeOptions {
 
 const cache = new Map<string, PosAnalysis>();
 
+/**
+ * Stockfish's view of a position (cached), with the same settings judgeMove uses for the "before" position.
+ * Calling this when it becomes your turn means the verdict on your move only has to wait for the "after" half.
+ */
+export const analysePos = (engine: Pick<Engine, 'run'>, fen: string, multipv = 3, o: JudgeOptions = {}): Promise<PosAnalysis> => analyse(engine, fen, multipv, o);
+
 async function analyse(engine: Pick<Engine, 'run'>, fen: string, multipv: number, o: JudgeOptions): Promise<PosAnalysis> {
   const term = terminalAnalysis(fen);
   if (term) return term;

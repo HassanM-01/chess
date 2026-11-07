@@ -43,6 +43,18 @@ describe('the coach prompt', () => {
     expect(later[0].content).toContain('{"a":1}');
     expect(later[2].content).toBe('And?');
   });
+  it('keeps every follow-up valid when the chat on screen starts with the coach answer', () => {
+    // CoachBox shows the opening question as a button, so its history starts with the assistant's reply
+    const a = (content: string) => ({ role: 'assistant' as const, content });
+    const u = (content: string) => ({ role: 'user' as const, content });
+    for (const history of [[a('Answer one.'), u('why not the knight?')], [a('Answer one.'), u('why?'), a('Answer two.'), u('and the bishop?')]]) {
+      const msgs = coachMessages('{"a":1}', history);
+      expect(msgs[0].role).toBe('user');
+      expect(msgs[0].content).toContain(FIRST_QUESTION);
+      expect(msgs[msgs.length - 1].role).toBe('user');
+      expect(() => validate({ system: COACH_SYSTEM, messages: msgs })).not.toThrow();
+    }
+  });
 });
 
 const engine = hasNativeEngine ? makeNativeEngine(4, 256) : null;

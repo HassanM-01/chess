@@ -88,7 +88,10 @@ export const FIRST_QUESTION = "Please explain this to me like I'm brand new to c
 
 /** The first user message carries the facts; later messages are just the student's words. */
 export function coachMessages(factsJson: string, history: { role: 'user' | 'assistant'; content: string }[]): { role: 'user' | 'assistant'; content: string }[] {
-  const msgs = history.length ? history : [{ role: 'user' as const, content: FIRST_QUESTION }];
+  // The chat on screen starts with the coach's answer (the opening question is a button, not a typed message),
+  // so a conversation that begins with the assistant gets the opening question put back in front of it.
+  const opening = { role: 'user' as const, content: FIRST_QUESTION };
+  const msgs = !history.length ? [opening] : history[0].role === 'assistant' ? [opening, ...history] : history;
   const [first, ...rest] = msgs;
   return [{ role: 'user', content: `FACTS (JSON, computed by Stockfish and the app):\n${factsJson.slice(0, 7000)}\n\nStudent: ${first.content}` }, ...rest];
 }

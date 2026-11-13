@@ -10,7 +10,7 @@ import { pieceHint, positionHint } from '@/features/train/hints';
 import { explainBestMove } from '@/review/explain';
 import { puzzleFacts } from '@/review/coachFacts';
 import { judgeMove } from '@/review/judge';
-import { checkMove, sideOf, type Puzzle } from '@/review/puzzles';
+import { checkMove, countsForRating, sideOf, type Puzzle } from '@/review/puzzles';
 import { toPosAnalysis } from '@/review/runReview';
 import { bestMoveSteps, type Step } from '@/review/words';
 import { WEAK, topWeaknesses } from '@/review/weak';
@@ -80,14 +80,14 @@ const THEME_NAMES: Record<string, string> = {
 const RATED_THEMES = ['mateIn1', 'mateIn2', 'mateIn3', 'fork', 'pin', 'skewer', 'sacrifice', 'discoveredAttack', 'hangingPiece', 'backRankMate', 'endgame'];
 const HIDDEN_THEMES = new Set(['yourMistake', 'yourOpponentSlipped', 'mate', 'threat', 'calm', 'judge', 'crushing', 'advantage', 'punish']);
 
-const MODES: { key: PuzzleMode; label: string; blurb: string }[] = [
-  { key: 'rated', label: 'Rated puzzles', blurb: 'The classic trainer. Your rating goes up and down.' },
-  { key: 'mistake', label: 'Fix my mistakes', blurb: 'Positions from your games where you went wrong.' },
-  { key: 'punish', label: 'Punish their mistakes', blurb: 'Your opponent slipped. Find the winning reply.' },
-  { key: 'mate', label: 'Checkmate', blurb: 'Mates in 1, 2 and 3 that came up in your games.' },
-  { key: 'tactic', label: 'Tactics from my games', blurb: 'Free pieces, forks, winning material, saving a piece.' },
-  { key: 'threat', label: 'Spot the threat', blurb: 'Which of your pieces are in danger? Or is nothing?' },
-  { key: 'judge', label: 'Safe or blunder?', blurb: 'Judge a move before it is explained.' },
+const MODES: { key: PuzzleMode; label: string; blurb: string; counts: boolean }[] = [
+  { key: 'rated', label: 'Rated puzzles', blurb: 'The classic trainer. Your rating goes up and down.', counts: true },
+  { key: 'mistake', label: 'Fix my mistakes', blurb: 'Positions from your games where you went wrong. Practice: does not change your rating.', counts: false },
+  { key: 'punish', label: 'Punish their mistakes', blurb: 'Your opponent slipped. Find the winning reply. Counts toward your rating.', counts: true },
+  { key: 'mate', label: 'Checkmate', blurb: 'Mates in 1, 2 and 3 that came up in your games. Counts toward your rating.', counts: true },
+  { key: 'tactic', label: 'Tactics from my games', blurb: 'Free pieces, forks, winning material, saving a piece. Counts toward your rating.', counts: true },
+  { key: 'threat', label: 'Spot the threat', blurb: 'Which of your pieces are in danger? Or is nothing? Practice: does not change your rating.', counts: false },
+  { key: 'judge', label: 'Safe or blunder?', blurb: 'Judge a move before it is explained. Practice: does not change your rating.', counts: false },
 ];
 
 function fresh(p: Puzzle): Run {
@@ -379,6 +379,7 @@ export function PuzzlesPage(): JSX.Element {
   const sideName = solver === 'w' ? 'White' : 'Black';
   const modeInfo = MODES.find((m) => m.key === mode)!;
 
+  const counts = !run || countsForRating(run.puzzle);
   const banner = ((): { cls: string; text: string } | null => {
     if (!run) return null;
     const j = run.puzzle.judge;
@@ -393,8 +394,8 @@ export function PuzzlesPage(): JSX.Element {
     }
     if (run.checking) return { cls: '', text: `Checking ${run.checking} with Stockfish…` };
     if (run.status === 'solving') return { cls: run.feedback === 'wrong' ? 'bad' : '', text: run.feedback === 'wrong' ? 'That is not the move. Try again.' : run.step === 0 ? 'Find the best move.' : 'Good. Keep going.' };
-    if (run.status === 'solved') return { cls: 'good', text: `Puzzle solved!${run.delta ? ` ${run.delta > 0 ? '+' : ''}${run.delta}` : ''}` };
-    if (run.status === 'failed') return { cls: 'bad', text: `Solved, but not cleanly.${run.delta ? ` ${run.delta}` : ''}` };
+    if (run.status === 'solved') return { cls: 'good', text: `Puzzle solved!${counts && run.delta ? ` ${run.delta > 0 ? '+' : ''}${run.delta}` : ''}` };
+    if (run.status === 'failed') return { cls: 'bad', text: `Solved, but not cleanly.${counts && run.delta ? ` ${run.delta}` : ''}` };
     return { cls: 'bad', text: `Solution: ${sol}${run.delta ? `  (${run.delta})` : ''}` };
   })();
 
@@ -411,7 +412,7 @@ export function PuzzlesPage(): JSX.Element {
       <section className="dk-boardcol">
         <div className="player-bar">
           <b>{run ? `${sideName} to move` : 'Puzzles'}</b>
-          {run && <span className="muted small">{run.puzzle.source === 'game' ? modeInfo.label : `Puzzle rating ${run.puzzle.rating}`}</span>}
+          {run && <span className="muted small" data-testid="puzzle-rated-label">{run.puzzle.source === 'game' ? (counts ? `${modeInfo.label} · rated ${run.puzzle.rating}` : `${modeInfo.label} · practice, not rated`) : `Puzzle rating ${run.puzzle.rating}`}</span>}
           <span className="grow" />
           <span className="pill">{Math.floor(seconds / 60)}:{String(seconds % 60).padStart(2, '0')}</span>
         </div>
@@ -452,6 +453,7 @@ export function PuzzlesPage(): JSX.Element {
             <b>{banner.text}</b>
           </div>
         )}
+        {run && !counts && run.status !== 'solving' && <div className="small muted" data-testid="practice-note">Practice puzzle: your rating stays the same.</div>}
         {hintText && <div className="hint-card small" data-testid="hint-text">💡 {hintText}</div>}
         <div className="dk-controls">
           {kind === 'solve' && (
@@ -487,6 +489,7 @@ export function PuzzlesPage(): JSX.Element {
             <span>Streak <b>{pr.streak}</b></span>
             <span>Best <b>{pr.bestStreak}</b></span>
           </div>
+          <div className="small muted" data-testid="rating-note">Your rating moves with Rated puzzles, Checkmate, Tactics and Punish. The other modes are practice.</div>
           {mode === 'rated' && pr.rating > 400 && (
             <button className="linklike small" onClick={() => usePuzzles.getState().easier()} data-testid="easier">Too hard? Give me easier puzzles</button>
           )}
@@ -533,7 +536,7 @@ export function PuzzlesPage(): JSX.Element {
         <div className="mode-list" role="tablist" aria-label="Training mode">
           {MODES.map((m) => (
             <button key={m.key} role="tab" className={`mode-btn${mode === m.key ? ' on' : ''}`} aria-pressed={mode === m.key} onClick={() => choose(m.key)} data-testid={`mode-${m.key}`}>
-              <span className="mode-name">{m.label}</span>
+              <span className="mode-name">{m.label} <span className={`mode-tag${m.counts ? ' on' : ''}`} data-testid={`tag-${m.key}`}>{m.counts ? 'rated' : 'practice'}</span></span>
               <span className="mode-count">{m.key !== 'rated' && store.mining && !countOf(m.key) ? '…' : countOf(m.key).toLocaleString()}</span>
               <span className="mode-blurb small muted">{m.blurb}</span>
             </button>

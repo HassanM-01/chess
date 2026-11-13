@@ -3,7 +3,7 @@ import { create } from 'zustand';
 import { loadBundledPuzzles } from '@/data/bundledPuzzles';
 import { mineGame } from '@/review/mineGames';
 import type { ExplainTag } from '@/review/explain';
-import { eloUpdate, fromLichessRow, pickPuzzle, type Puzzle, type PuzzleGroup } from '@/review/puzzles';
+import { countsForRating, eloUpdate, fromLichessRow, pickPuzzle, type Puzzle, type PuzzleGroup } from '@/review/puzzles';
 import type { StoredReview } from '@/review/types';
 import { useLibrary } from './library';
 
@@ -164,8 +164,7 @@ export const usePuzzles = create<PuzzleState>((set, get) => {
     },
     finish(p, ok) {
       const pr = get().progress;
-      const rated = p.source !== 'game';
-      const delta = rated ? eloUpdate(pr.rating, p.rating, ok) : 0;
+      const delta = countsForRating(p) ? eloUpdate(pr.rating, p.rating, ok) : 0;
       const streak = ok ? pr.streak + 1 : 0;
       const rating = Math.max(100, pr.rating + delta);
       const progress: PuzzleProgress = {

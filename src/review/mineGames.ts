@@ -41,6 +41,8 @@ const mateFor = (l: StoredLine | undefined, who: Color): number | null => (l && 
 
 const TACTIC_THEME: Record<string, string> = { free: 'hangingPiece', fork: 'fork', winmat: 'winMaterial', save: 'saveYourPiece', stopmate: 'stopTheMate' };
 const MATE_RATING = [0, 600, 900, 1200];
+/** a reply that wins material after an opponent's slip (a free piece, a fork...): about the level of the easier tactics */
+const PUNISH_RATING = 800;
 /** the theme a mistake of this kind trains, so it can be practised on its own */
 const MISTAKE_THEME: Partial<Record<ExplainTag, string>> = {
   'allowed-mate': 'stopTheMate',
@@ -159,7 +161,7 @@ export function mineGame(g: GameForMining, positions: PosAnalysis[]): MiningResu
       fen,
       solution,
       alts: [],
-      rating: 0,
+      rating: mate ? MATE_RATING[mate] ?? 1400 : PUNISH_RATING,
       themes: [mate ? `mateIn${mate}` : 'punish', 'yourOpponentSlipped'],
       source: 'game',
       kind: 'solve',

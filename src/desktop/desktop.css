@@ -170,6 +170,8 @@ input[type=checkbox]{width:auto;accent-color:var(--accent)}
 .pm{display:inline-flex;align-items:center;gap:3px;margin-right:6px;font-weight:700;white-space:nowrap}
 .spinner.tiny{width:16px;height:16px;border-width:3px}
 .move-card.inaccuracy{border-color:#f7c631}
+.mode-tag{font-size:11px;font-weight:700;padding:1px 7px;border-radius:99px;background:var(--surface2);color:var(--ink2);vertical-align:middle;margin-left:4px}
+.mode-tag.on{background:var(--accent-soft);color:var(--accent)}
 
 /* Phone (opened in Safari through Phone access, or any narrow window): tab bar at the bottom, board on top, one column. */
 @media (max-width:820px){

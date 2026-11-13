@@ -122,10 +122,17 @@ test('puzzles page loads and offers the bundled puzzles', async () => {
 test('training modes are built from the reviewed game and explain themselves', async () => {
   await page.getByRole('link', { name: 'Puzzles' }).click();
   await expect(page.getByTestId('puzzles-page')).toBeVisible();
+  const rating = async (): Promise<number> => +((await page.getByTestId('puzzle-rating').textContent()) ?? '0');
+  // every mode says whether it moves the rating
+  for (const m of ['rated', 'punish', 'mate', 'tactic']) await expect(page.getByTestId(`tag-${m}`)).toHaveText('rated');
+  for (const m of ['mistake', 'threat', 'judge']) await expect(page.getByTestId(`tag-${m}`)).toHaveText('practice');
+  await expect(page.getByTestId('rating-note')).toContainText('Checkmate, Tactics and Punish');
 
   // checkmate: the mate in 2 that came up in the game (Bxf7+ Ke7 Nd5#). Use the hints to read the move, then play it.
+  const r0 = await rating();
   await page.getByTestId('mode-mate').click();
   await expect(page.getByTestId('puzzle-banner')).toHaveAttribute('data-status', 'solving');
+  await expect(page.getByTestId('puzzle-rated-label')).toContainText(/rated [0-9]+/); // a checkmate from your games has a difficulty
   const startFen = (await page.getByTestId('board').getAttribute('data-fen'))!;
   await page.locator('[data-sq="a2"]').click();
   await page.locator('[data-sq="a3"]').click();
@@ -147,6 +154,10 @@ test('training modes are built from the reviewed game and explain themselves', a
     await expect.poll(async () => ((await status()) !== 'solving' ? 'over' : await arrowAt()), { timeout: 8000 }).not.toBe(move);
   }
   await expect(page.getByTestId('puzzle-banner')).toHaveAttribute('data-status', /solved|failed/);
+  // hints and a wrong try make it "not clean": that costs rating, so the rating moved
+  await expect(page.getByTestId('puzzle-banner')).toContainText(/-[0-9]+/);
+  const r1 = await rating();
+  expect(r1).toBeLessThan(r0);
   await expect(page.getByTestId('puzzle-explain')).toContainText(/checkmate/i);
   // Stockfish writes a step-by-step breakdown for the finished puzzle
   await page.getByTestId('show-steps').click({ timeout: 20_000 });
@@ -157,8 +168,11 @@ test('training modes are built from the reviewed game and explain themselves', a
   // punish: the opponent's blunder 5...Bxd1 offers a winning reply
   await page.getByTestId('mode-punish').click();
   await expect(page.getByTestId('puzzle-banner')).toBeVisible();
+  await expect(page.getByTestId('puzzle-rated-label')).toContainText(/rated [0-9]+/);
   await page.getByTestId('solution').click();
   await expect(page.getByTestId('puzzle-explain')).toContainText(/checkmate|best reply/i);
+  const r2 = await rating();
+  expect(r2).toBeLessThan(r1); // looking at the solution counts as a miss
 
   // safe or blunder: answer, then the explanation appears either way
   await page.getByTestId('mode-judge').click();
@@ -166,6 +180,10 @@ test('training modes are built from the reviewed game and explain themselves', a
   await page.getByTestId('judge-blunder').click();
   await expect(page.getByTestId('puzzle-banner')).toHaveAttribute('data-status', /solved|failed/);
   await expect(page.getByTestId('puzzle-explain')).toBeVisible();
+  // safe-or-blunder is practice: it says so and leaves the rating alone
+  await expect(page.getByTestId('puzzle-rated-label')).toContainText('practice, not rated');
+  await expect(page.getByTestId('practice-note')).toContainText('your rating stays the same');
+  expect(await rating()).toBe(r2);
   await page.screenshot({ path: join(dataDir, 'shot-judge.png') });
 
   // the weak-spot summary shows what the games have in common
@@ -175,6 +193,14 @@ test('training modes are built from the reviewed game and explain themselves', a
 const move = async (from: string, to: string): Promise<void> => {
   await page.locator(`[data-sq="${from}"]`).click();
   await page.locator(`[data-sq="${to}"]`).click();
+};
+
+/** Open the Play tab and get to its menu, leaving a game that is still open from an earlier test. */
+const toPlayMenu = async (): Promise<void> => {
+  await page.getByRole('link', { name: 'Play', exact: true }).click();
+  await page.locator('[data-testid="play-setup"],[data-testid="play-game"]').first().waitFor();
+  if (await page.getByTestId('play-leave').count()) await page.getByTestId('play-leave').click();
+  await expect(page.getByTestId('play-setup')).toBeVisible();
 };
 
 test('play: Stockfish checks every move, stops a blunder, and the heads-up and live engine run together', async () => {
@@ -220,9 +246,7 @@ test('play: Stockfish checks every move, stops a blunder, and the heads-up and l
 });
 
 test('play: an opening drill teaches the line and judges a different move', async () => {
-  await page.getByRole('link', { name: 'Play', exact: true }).click();
-  // the finished game from the last test is still open: leave it for the menu
-  if (await page.getByTestId('play-leave').count()) await page.getByTestId('play-leave').click();
+  await toPlayMenu();
   await page.getByTestId('tab-openings').click();
   await expect(page.getByTestId('opening-london')).toBeVisible();
   await page.getByTestId('drill-london:0').click();
@@ -247,8 +271,7 @@ test('play: an opening drill teaches the line and judges a different move', asyn
 });
 
 test('play: finishing a whole opening line is remembered, and you can play on from it', async () => {
-  await page.getByRole('link', { name: 'Play', exact: true }).click();
-  await page.getByTestId('play-leave').click();
+  await toPlayMenu();
   await page.getByTestId('tab-openings').click();
   await page.getByTestId('drill-london:0').click();
   const mine: [string, string][] = [['d2', 'd4'], ['c1', 'f4'], ['e2', 'e3'], ['g1', 'f3'], ['c2', 'c3'], ['b1', 'd2'], ['f4', 'g3'], ['f1', 'd3']];
@@ -267,8 +290,7 @@ test('play: finishing a whole opening line is remembered, and you can play on fr
 });
 
 test('play: an endgame states its goal and tips', async () => {
-  await page.getByRole('link', { name: 'Play', exact: true }).click();
-  if (await page.getByTestId('play-leave').count()) await page.getByTestId('play-leave').click();
+  await toPlayMenu();
   await page.getByTestId('tab-endgame').click();
   await expect(page.getByTestId('scenario-eg-lucena')).toContainText('Lucena');
   await page.getByTestId('start-eg-kqk').click();

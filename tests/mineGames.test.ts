@@ -3,7 +3,7 @@ import { afterAll, describe, expect, it } from 'vitest';
 import { Chess } from '@/chess/compat';
 import { START_FEN } from '@/chess/types';
 import { mineGame, realThreats } from '@/review/mineGames';
-import { checkMove } from '@/review/puzzles';
+import { checkMove, countsForRating, type Puzzle } from '@/review/puzzles';
 import { analyzePositions } from '@/review/runReview';
 import { hasNativeEngine, makeNativeEngine } from './helpers/nativeEngine';
 
@@ -17,6 +17,23 @@ describe('defensive "only move" puzzles', () => {
     const p = r.puzzles.find((q) => q.group === 'mistake');
     expect(p?.solution).toEqual(['e2e4']);
     expect(p?.themes).toContain('defence');
+  });
+});
+
+describe('which puzzles move the rating', () => {
+  const p = (source: 'game' | 'bundled' | 'lichess', group: Puzzle['group'], rating: number) => ({ source, group, rating });
+  it('rated puzzles always count', () => {
+    expect(countsForRating(p('bundled', 'rated', 1200))).toBe(true);
+    expect(countsForRating(p('lichess', undefined, 1500))).toBe(true);
+  });
+  it('game puzzles count for checkmate, tactics and punish, but only when they have a difficulty', () => {
+    for (const g of ['mate', 'tactic', 'punish'] as const) {
+      expect(countsForRating(p('game', g, 800)), g).toBe(true);
+      expect(countsForRating(p('game', g, 0)), `${g} without a rating`).toBe(false);
+    }
+  });
+  it('mistakes, threats and safe-or-blunder are practice', () => {
+    for (const g of ['mistake', 'threat', 'judge'] as const) expect(countsForRating(p('game', g, 900)), g).toBe(false);
   });
 });
 
@@ -74,5 +91,12 @@ describe.skipIf(!hasNativeEngine)('mining a short reviewed game (real engine)', 
     expect(punish?.solution).toEqual(['h5f7']);
     expect(punish?.explain?.join(' ')).toMatch(/checkmate/i);
     expect(punish?.context).toMatch(/Nf6/);
+
+    // which of these move your rating: checkmate, tactics and punish do (they have a difficulty); the rest are practice
+    expect(mate.rating).toBe(600);
+    expect(countsForRating(mate)).toBe(true);
+    expect(punish!.rating).toBe(600); // a mate in one: rated like any mate in one
+    expect(countsForRating(punish!)).toBe(true);
+    for (const p of r.puzzles.filter((q) => ['mistake', 'threat', 'judge'].includes(q.group!))) expect(countsForRating(p), `${p.group} ${p.id}`).toBe(false);
   }, 120_000);
 });

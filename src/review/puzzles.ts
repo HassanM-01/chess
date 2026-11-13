@@ -43,7 +43,16 @@ export interface Puzzle {
   game?: { gameId: string; ply: number; played: string; best: string; opponent: string; loss: number; moveNo: string };
 }
 
-export const sideOf = (fen: string): Color => (fen.split(' ')[1] === 'b' ? 'b' : 'w');
+/** Puzzle modes built from your own games whose puzzles have a difficulty, so they move your rating like the rated trainer. */
+export const RATED_GAME_GROUPS: PuzzleGroup[] = ['mate', 'tactic', 'punish'];
+
+/** Does solving or failing this puzzle change the puzzle rating? Other game-based modes are practice only. */
+export function countsForRating(p: Pick<Puzzle, 'source' | 'group' | 'rating'>): boolean {
+  if (p.source !== 'game') return true;
+  return RATED_GAME_GROUPS.includes(p.group ?? 'rated') && p.rating > 0;
+}
+
+export const sideOf = (fen: string): Color =>(fen.split(' ')[1] === 'b' ? 'b' : 'w');
 
 /** Is `uci` legal here, and does it give checkmate? (a checkmating move always solves a puzzle) */
 export function givesMate(fen: string, uci: Uci): boolean {

@@ -17,11 +17,14 @@ export function LiveEngine({
   enabled,
   lines: nLines = 3,
   onSnapshot,
+  pausedText = 'Live analysis is off.',
 }: {
   fen: string;
   enabled: boolean;
   lines?: number;
   onSnapshot?: (s: LiveSnapshot) => void;
+  /** what to show while `enabled` is false (the Play page pauses it while the computer is thinking) */
+  pausedText?: string;
 }): JSX.Element {
   const [snap, setSnap] = useState<LiveSnapshot | null>(null);
   const [err, setErr] = useState('');
@@ -66,7 +69,7 @@ export function LiveEngine({
     return () => ac.abort();
   }, [fen, enabled, busy, nLines, multipv]);
 
-  if (!enabled) return <div className="live muted small">Live analysis is off.</div>;
+  if (!enabled) return <div className="live muted small">{pausedText}</div>;
   if (busy) return <div className="live muted small">A game review is using the engine. Live analysis resumes when it finishes.</div>;
   return (
     <div className="live" data-testid="live-engine">

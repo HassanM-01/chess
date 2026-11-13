@@ -65,6 +65,13 @@ test('imports a PGN, reviews it with native Stockfish and labels the moves', asy
   await page.getByRole('tab', { name: 'Moves' }).click();
   await page.locator('[data-ply="10"]').click();
   await expect(page.getByTestId('move-title')).toContainText(/Bxd1 is (a blunder|a mistake)/);
+  // the plain-English explanation: what happens, why the best move is better, and a habit to remember
+  await expect(page.getByTestId('explanation')).toContainText(/checkmate/i);
+  await expect(page.getByTestId('explanation')).toContainText(/is better/i);
+  await page.getByTestId('break-down').click();
+  await expect(page.getByTestId('steps')).toContainText('What was played');
+  await expect(page.getByTestId('steps')).toContainText(/They take the pawn on f7 with the bishop|You move the knight/);
+  await expect(page.getByTestId('coach-off')).toBeVisible(); // no API key saved: the coach offers to be turned on
   await page.screenshot({ path: join(dataDir, 'shot-blunder.png') });
   // Retry: the board goes back to before the mistake and dxe5 (the best move) must be accepted
   await page.getByTestId('retry').click();
@@ -84,9 +91,21 @@ test('puzzles page loads and offers the bundled puzzles', async () => {
   await page.screenshot({ path: join(dataDir, 'shot-puzzles.png') });
   // solve one for real, by clicking squares
   const puzzles = JSON.parse(readFileSync('data/puzzles.json', 'utf8')) as { fen: string; moves: string[] }[];
-  const fen = (await page.getByTestId('board').getAttribute('data-fen'))!;
-  const p = puzzles.find((x) => x.fen === fen)!;
-  expect(p, 'bundled puzzle for ' + fen).toBeTruthy();
+  const current = async (): Promise<{ fen: string; moves: string[] }> => {
+    const fen = (await page.getByTestId('board').getAttribute('data-fen'))!;
+    const found = puzzles.find((x) => x.fen === fen)!;
+    expect(found, 'bundled puzzle for ' + fen).toBeTruthy();
+    return found;
+  };
+  let p = await current();
+  // about one puzzle in nine needs several moves; this test solves a one-move puzzle, so skip those
+  for (let i = 0; i < 30 && p.moves.length > 1; i++) {
+    const old = p.fen;
+    await page.getByTestId('next-puzzle').click();
+    await expect(page.getByTestId('board')).not.toHaveAttribute('data-fen', old);
+    p = await current();
+  }
+  expect(p.moves.length).toBe(1);
   await page.getByTestId('hint').click();
   const first = p.moves[0];
   await page.locator(`[data-sq="${first.slice(0, 2)}"]`).click();
@@ -100,6 +119,188 @@ test('puzzles page loads and offers the bundled puzzles', async () => {
   await expect(page.getByTestId('puzzle-rating')).not.toHaveText('1000');
 });
 
+test('training modes are built from the reviewed game and explain themselves', async () => {
+  await page.getByRole('link', { name: 'Puzzles' }).click();
+  await expect(page.getByTestId('puzzles-page')).toBeVisible();
+  const rating = async (): Promise<number> => +((await page.getByTestId('puzzle-rating').textContent()) ?? '0');
+  // every mode says whether it moves the rating
+  for (const m of ['rated', 'punish', 'mate', 'tactic']) await expect(page.getByTestId(`tag-${m}`)).toHaveText('rated');
+  for (const m of ['mistake', 'threat', 'judge']) await expect(page.getByTestId(`tag-${m}`)).toHaveText('practice');
+  await expect(page.getByTestId('rating-note')).toContainText('Checkmate, Tactics and Punish');
+
+  // checkmate: the mate in 2 that came up in the game (Bxf7+ Ke7 Nd5#). Use the hints to read the move, then play it.
+  const r0 = await rating();
+  await page.getByTestId('mode-mate').click();
+  await expect(page.getByTestId('puzzle-banner')).toHaveAttribute('data-status', 'solving');
+  await expect(page.getByTestId('puzzle-rated-label')).toContainText(/rated [0-9]+/); // a checkmate from your games has a difficulty
+  const startFen = (await page.getByTestId('board').getAttribute('data-fen'))!;
+  await page.locator('[data-sq="a2"]').click();
+  await page.locator('[data-sq="a3"]').click();
+  await expect(page.getByTestId('try-note')).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByTestId('try-note')).toContainText(/a3/);
+  await expect(page.getByTestId('puzzle-banner')).toHaveAttribute('data-status', 'solving');
+  await expect(page.getByTestId('board')).toHaveAttribute('data-fen', startFen); // the piece goes back so you can try again
+  for (let i = 0; i < 3; i++) await page.getByTestId('hint').click();
+  const arrowAt = async (): Promise<string> => ((await page.locator('[data-arrow]').first().getAttribute('data-arrow')) ?? '').split(':')[0];
+  const play = async (uci: string): Promise<void> => {
+    await page.locator(`[data-sq="${uci.slice(0, 2)}"]`).click();
+    await page.locator(`[data-sq="${uci.slice(2, 4)}"]`).click();
+  };
+  const status = async (): Promise<string> => (await page.getByTestId('puzzle-banner').getAttribute('data-status')) ?? '';
+  // keep playing the hinted move until the puzzle is over (a mate in 2 or 3 has several moves)
+  for (let i = 0; i < 4 && (await status()) === 'solving'; i++) {
+    const move = await arrowAt();
+    await play(move);
+    await expect.poll(async () => ((await status()) !== 'solving' ? 'over' : await arrowAt()), { timeout: 8000 }).not.toBe(move);
+  }
+  await expect(page.getByTestId('puzzle-banner')).toHaveAttribute('data-status', /solved|failed/);
+  // hints and a wrong try make it "not clean": that costs rating, so the rating moved
+  await expect(page.getByTestId('puzzle-banner')).toContainText(/-[0-9]+/);
+  const r1 = await rating();
+  expect(r1).toBeLessThan(r0);
+  await expect(page.getByTestId('puzzle-explain')).toContainText(/checkmate/i);
+  // Stockfish writes a step-by-step breakdown for the finished puzzle
+  await page.getByTestId('show-steps').click({ timeout: 20_000 });
+  await expect(page.getByTestId('steps')).toContainText('Look at the board');
+  await expect(page.getByTestId('coach-off')).toBeVisible();
+  await page.screenshot({ path: join(dataDir, 'shot-mate-puzzle.png') });
+
+  // punish: the opponent's blunder 5...Bxd1 offers a winning reply
+  await page.getByTestId('mode-punish').click();
+  await expect(page.getByTestId('puzzle-banner')).toBeVisible();
+  await expect(page.getByTestId('puzzle-rated-label')).toContainText(/rated [0-9]+/);
+  await page.getByTestId('solution').click();
+  await expect(page.getByTestId('puzzle-explain')).toContainText(/checkmate|best reply/i);
+  const r2 = await rating();
+  expect(r2).toBeLessThan(r1); // looking at the solution counts as a miss
+
+  // safe or blunder: answer, then the explanation appears either way
+  await page.getByTestId('mode-judge').click();
+  await expect(page.getByTestId('judge-blunder')).toBeVisible();
+  await page.getByTestId('judge-blunder').click();
+  await expect(page.getByTestId('puzzle-banner')).toHaveAttribute('data-status', /solved|failed/);
+  await expect(page.getByTestId('puzzle-explain')).toBeVisible();
+  // safe-or-blunder is practice: it says so and leaves the rating alone
+  await expect(page.getByTestId('puzzle-rated-label')).toContainText('practice, not rated');
+  await expect(page.getByTestId('practice-note')).toContainText('your rating stays the same');
+  expect(await rating()).toBe(r2);
+  await page.screenshot({ path: join(dataDir, 'shot-judge.png') });
+
+  // the weak-spot summary shows what the games have in common
+  await expect(page.getByRole('tablist', { name: 'Training mode' })).toBeVisible();
+});
+
+const move = async (from: string, to: string): Promise<void> => {
+  await page.locator(`[data-sq="${from}"]`).click();
+  await page.locator(`[data-sq="${to}"]`).click();
+};
+
+/** Open the Play tab and get to its menu, leaving a game that is still open from an earlier test. */
+const toPlayMenu = async (): Promise<void> => {
+  await page.getByRole('link', { name: 'Play', exact: true }).click();
+  await page.locator('[data-testid="play-setup"],[data-testid="play-game"]').first().waitFor();
+  if (await page.getByTestId('play-leave').count()) await page.getByTestId('play-leave').click();
+  await expect(page.getByTestId('play-setup')).toBeVisible();
+};
+
+test('play: Stockfish checks every move, stops a blunder, and the heads-up and live engine run together', async () => {
+  await page.getByRole('link', { name: 'Play', exact: true }).click();
+  await expect(page.getByTestId('play-setup')).toBeVisible();
+  await page.getByTestId('level-0').click(); // the weakest computer, so the test never depends on a strong reply
+  await page.screenshot({ path: join(dataDir, 'shot-play-menu.png') });
+
+  await page.getByTestId('tab-middlegame').click();
+  await page.getByTestId('start-mg-italian').click();
+  await expect(page.getByTestId('play-game')).toBeVisible();
+  await expect(page.getByTestId('play-status')).toHaveText('Your move');
+  await expect(page.getByTestId('heads-up')).toBeVisible();
+  await expect(page.getByTestId('live-engine')).toContainText(/depth/i, { timeout: 30_000 });
+  const startFen = (await page.getByTestId('board').getAttribute('data-fen'))!;
+
+  // 1. Nxe5?? loses a knight for a pawn: Blunder Check stops the game before the computer replies
+  await move('f3', 'e5');
+  await expect(page.getByTestId('blunder-check')).toBeVisible({ timeout: 40_000 });
+  await expect(page.getByTestId('blunder-check')).toContainText(/Nxe5 is (a blunder|a mistake)/);
+  await page.screenshot({ path: join(dataDir, 'shot-play-blunder.png') });
+  await page.getByTestId('show-better').click();
+  await page.getByTestId('take-back').click();
+  await expect(page.getByTestId('board')).toHaveAttribute('data-fen', startFen); // back where we were, nothing lost
+
+  // 2. a sound developing move is judged and explained, then the computer replies
+  await move('d2', 'f1');
+  await expect(page.getByTestId('verdict')).toHaveAttribute('data-status', 'done', { timeout: 40_000 });
+  await expect(page.getByTestId('verdict-title')).toContainText(/Nf1 is/);
+  await expect(page.getByTestId('play-status')).toHaveText('Your move', { timeout: 30_000 });
+  await expect.poll(async () => (await page.getByTestId('play-moves').textContent()) ?? '').toMatch(/Nf1/);
+  await page.screenshot({ path: join(dataDir, 'shot-play-game.png') });
+
+  // 3. hint in two steps, then resign and send the game to the review
+  await page.getByTestId('play-hint').click();
+  await expect(page.getByTestId('play-hint-text')).toContainText(/Look at your/, { timeout: 30_000 });
+  await page.getByTestId('play-hint').click();
+  await expect(page.getByTestId('play-hint-text')).not.toContainText(/^💡 Look at your/);
+  await page.getByTestId('play-resign').click();
+  await expect(page.getByTestId('game-over')).toContainText('You resigned');
+  await page.getByTestId('review-game').click();
+  await expect(page.getByTestId('review-page')).toBeVisible();
+});
+
+test('play: an opening drill teaches the line and judges a different move', async () => {
+  await toPlayMenu();
+  await page.getByTestId('tab-openings').click();
+  await expect(page.getByTestId('opening-london')).toBeVisible();
+  await page.getByTestId('drill-london:0').click();
+  await expect(page.getByTestId('drill-card')).toContainText('London System');
+
+  await move('d2', 'd4'); // the line starts with d4
+  await expect(page.getByTestId('drill-card')).toContainText(/They played d5/, { timeout: 15_000 }); // the scripted reply, with the reason
+  await expect(page.getByTestId('play-status')).toHaveText('Your move');
+
+  // a move that is not in the line is checked by Stockfish and the board does not change
+  const fen = (await page.getByTestId('board').getAttribute('data-fen'))!;
+  await move('a2', 'a3');
+  await expect(page.getByTestId('try-note')).toContainText(/a3 is not the move in this line/, { timeout: 40_000 });
+  await expect(page.getByTestId('try-note')).toContainText(/Bf4/);
+  await expect(page.getByTestId('board')).toHaveAttribute('data-fen', fen);
+  await page.getByTestId('drill-show-move').click();
+  await expect(page.getByTestId('play-hint-text')).toContainText(/The line plays Bf4/);
+  await page.screenshot({ path: join(dataDir, 'shot-play-drill.png') });
+
+  await move('c1', 'f4'); // now the right one
+  await expect(page.getByTestId('drill-card')).toContainText(/You played Bf4/);
+});
+
+test('play: finishing a whole opening line is remembered, and you can play on from it', async () => {
+  await toPlayMenu();
+  await page.getByTestId('tab-openings').click();
+  await page.getByTestId('drill-london:0').click();
+  const mine: [string, string][] = [['d2', 'd4'], ['c1', 'f4'], ['e2', 'e3'], ['g1', 'f3'], ['c2', 'c3'], ['b1', 'd2'], ['f4', 'g3'], ['f1', 'd3']];
+  for (const [from, to] of mine) {
+    await expect(page.getByTestId('play-status')).toHaveText('Your move', { timeout: 15_000 });
+    await move(from, to);
+  }
+  await expect(page.getByTestId('drill-done')).toBeVisible();
+  await page.getByTestId('drill-play-on').click();
+  // from here it is an ordinary game: the computer answers with its own move and Blunder Check is back on duty
+  await expect(page.getByTestId('play-status')).toHaveText('Your move', { timeout: 30_000 });
+  await expect(page.getByTestId('drill-card')).toHaveCount(0);
+  await page.getByTestId('play-leave').click();
+  await page.getByTestId('tab-openings').click();
+  await expect(page.getByTestId('learned-london:0')).toContainText('Finished 1×');
+});
+
+test('play: an endgame states its goal and tips', async () => {
+  await toPlayMenu();
+  await page.getByTestId('tab-endgame').click();
+  await expect(page.getByTestId('scenario-eg-lucena')).toContainText('Lucena');
+  await page.getByTestId('start-eg-kqk').click();
+  await expect(page.getByTestId('play-title')).toContainText('Goal: win this position');
+  await expect(page.getByText('Ideas for this position')).toBeVisible();
+  await page.screenshot({ path: join(dataDir, 'shot-play-endgame.png') });
+  await page.getByTestId('play-leave').click();
+  await expect(page.getByTestId('play-setup')).toBeVisible();
+});
+
 test('no script errors or CSP violations happened', () => {
   expect(problems).toEqual([]);
 });
@@ -107,6 +308,8 @@ test('no script errors or CSP violations happened', () => {
 test('settings expose the engine and depth controls', async () => {
   await page.getByRole('link', { name: 'Settings' }).click();
   await expect(page.getByTestId('engine-name')).toContainText('Stockfish');
+  await expect(page.getByTestId('coach-settings')).toContainText('your own Anthropic API key');
+  await expect(page.getByTestId('coach-key-input')).toHaveAttribute('type', 'password');
   await page.getByTestId('preset-maximum').click();
   await expect(page.getByLabel('Target depth')).toHaveValue('40');
   await page.screenshot({ path: join(dataDir, 'shot-settings.png') });

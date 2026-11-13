@@ -120,3 +120,102 @@ input[type=checkbox]{width:auto;accent-color:var(--accent)}
 .preset.on{border-color:var(--accent)}
 .res{width:38px;height:34px}
 @media (max-width:1250px){.dk-review,.dk-puzzles{grid-template-columns:minmax(380px,1fr) 380px}}
+
+/* Plain-English explanations, training modes */
+.explain{display:flex;flex-direction:column;gap:6px}
+.explain p{margin:0}
+.ex-headline{font-weight:800;font-size:15px}
+.ex-better{background:var(--surface2);border-left:3px solid var(--good);border-radius:6px;padding:8px 10px;display:flex;flex-direction:column;gap:4px}
+.note-card{gap:6px;border-left:4px solid var(--warn)}
+.note-card.good{border-left-color:var(--good);background:var(--good-soft)}
+.note-card.bad{border-left-color:var(--bad)}
+.note-card p{margin:0}
+.steps{display:flex;flex-direction:column;gap:10px}
+.step{display:flex;flex-direction:column;gap:3px;background:var(--surface2);border-radius:8px;padding:8px 10px}
+.step p{margin:0}
+.remember{background:var(--accent-soft);border-radius:8px;padding:8px 10px;line-height:1.4}
+.hint-card{background:var(--warn-soft);border-radius:10px;padding:10px 12px}
+.puzzle-context{text-align:center}
+.explain-card{gap:6px}
+.explain-card p{margin:0}
+.mode-list{display:flex;flex-direction:column;gap:6px}
+.mode-btn{appearance:none;text-align:left;background:var(--surface);border:2px solid transparent;border-radius:10px;padding:9px 12px;cursor:pointer;display:grid;grid-template-columns:1fr auto;gap:1px 8px;color:inherit;font:inherit}
+.mode-btn:hover{background:var(--surface2)}
+.mode-btn.on{border-color:var(--accent);background:var(--surface2)}
+.mode-name{font-weight:700}
+.mode-count{color:var(--ink2);font-variant-numeric:tabular-nums}
+.mode-blurb{grid-column:1/-1;display:none}
+.mode-btn.on .mode-blurb{display:block}
+.weak-row{display:flex;gap:8px;align-items:center}
+.btn.bad-btn{background:var(--bad-soft);color:var(--ink)}
+.btn.good-btn{background:var(--good-soft);color:var(--ink)}
+.coach-box{gap:8px;border-left:4px solid var(--accent)}
+.coach-turn{margin:0;white-space:pre-wrap;line-height:1.45}
+.coach-turn.user{color:var(--ink2)}
+.coach-box .row{display:flex;gap:8px}
+
+/* Play: menu and game */
+.seg{display:flex;flex-wrap:wrap;gap:4px;background:var(--surface2);border-radius:10px;padding:4px;align-self:flex-start}
+.seg button{appearance:none;border:0;background:transparent;color:var(--ink2);font:inherit;font-weight:700;padding:7px 12px;border-radius:7px;cursor:pointer}
+.seg button:hover{color:var(--ink)}
+.seg button.on{background:var(--accent);color:var(--accent-ink)}
+.pl-tabs{display:flex;gap:4px;border-bottom:1px solid var(--line)}
+.pl-tab{appearance:none;border:0;border-bottom:3px solid transparent;background:transparent;color:var(--ink2);font:inherit;font-weight:700;font-size:15px;padding:10px 16px;cursor:pointer}
+.pl-tab:hover{color:var(--ink)}
+.pl-tab.on{color:var(--ink);border-bottom-color:var(--accent)}
+.scenario-card{flex-direction:row;align-items:center;gap:16px}
+.drill-row{display:flex;align-items:center;gap:10px;padding:6px 8px;border-radius:8px;background:var(--surface2)}
+.heads{margin:0;line-height:1.4}
+.tips{margin:6px 0 0;padding-left:18px;display:flex;flex-direction:column;gap:6px}
+.pm{display:inline-flex;align-items:center;gap:3px;margin-right:6px;font-weight:700;white-space:nowrap}
+.spinner.tiny{width:16px;height:16px;border-width:3px}
+.move-card.inaccuracy{border-color:#f7c631}
+.mode-tag{font-size:11px;font-weight:700;padding:1px 7px;border-radius:99px;background:var(--surface2);color:var(--ink2);vertical-align:middle;margin-left:4px}
+.mode-tag.on{background:var(--accent-soft);color:var(--accent)}
+
+/* Phone (opened in Safari through Phone access, or any narrow window): tab bar at the bottom, board on top, one column. */
+@media (max-width:820px){
+  body{font-size:15px;-webkit-text-size-adjust:100%}
+  .dk-shell{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr) auto;padding-top:env(safe-area-inset-top)}
+  .dk-main{grid-row:1;overscroll-behavior:contain}
+  .dk-nav{grid-row:2;flex-direction:row;align-items:stretch;gap:2px;padding:4px 6px calc(4px + env(safe-area-inset-bottom));border-right:0;border-top:1px solid var(--line)}
+  .dk-brand,.dk-nav .grow,.dk-engine-chip{display:none}
+  .dk-link{flex:1 1 0;min-width:0;text-align:center;padding:12px 2px;font-size:13px;border-radius:8px}
+  .dk-page{padding:14px 12px 28px;gap:12px}
+  .dk-page h1{font-size:24px}
+  .dk-grid2,.grid3,.preset-grid{grid-template-columns:minmax(0,1fr)}
+  .dk-card{padding:12px}
+
+  .dk-review,.dk-puzzles{grid-template-columns:minmax(0,1fr);height:auto;min-height:0;padding:6px 6px 24px;gap:12px}
+  .dk-boardcol{justify-content:flex-start;gap:6px}
+  .dk-boardcol > *{max-width:none}
+  .board-row{grid-template-columns:14px minmax(0,1fr);gap:4px}
+  .evalbar-v{width:14px;border-radius:4px}
+  .ev-num{font-size:7px;padding:2px 0}
+  .dk-side{overflow:visible;padding:0 4px}
+  .dk-controls{flex-wrap:wrap;gap:6px}
+  .dk-controls .grow{display:none}
+  .dk-controls .btn{flex:1 1 auto;min-width:44px;min-height:44px;padding:6px 8px}
+  .dk-movelist{max-height:240px}
+  .eval-graph{height:64px}
+
+  .game-row{grid-template-columns:34px minmax(0,1fr) auto;gap:10px;padding:12px 6px}
+  .scenario-card{flex-wrap:wrap}
+  .pl-tabs{overflow-x:auto;scrollbar-width:none}
+  .pl-tab{padding:10px 12px;white-space:nowrap}
+  .seg{max-width:100%}
+  .big-rating{font-size:32px}
+  .acc-num{font-size:28px}
+
+  /* 16px inputs stop iOS from zooming in when a field is focused */
+  input,select,textarea{font-size:16px}
+  .btn,.mode-btn,.preset,.key-item,.dk-movelist .mv{touch-action:manipulation}
+}
+@media (max-width:820px) and (hover:none){
+  .dk-link:hover,.game-row:hover,.mode-btn:hover,.key-item:hover,.dk-movelist .mv:hover{background:inherit}
+  .dk-link.active{background:var(--surface2)}
+}
+
+/* Phone access card in Settings */
+.phone-link{display:flex;flex-direction:column;gap:4px;background:var(--surface2);border-radius:8px;padding:8px 10px}
+.phone-link code{word-break:break-all;background:none;padding:0;font-size:13px}

@@ -1,8 +1,14 @@
 // Puzzles: built from the user's own reviewed games, from the Lichess database, and from the bundled set.
 import { Chess, uciMove } from '@/chess/compat';
-import type { Color, Uci } from '@/chess/types';
+import type { Color, Square, Uci } from '@/chess/types';
 import { epFor } from './expected';
-import type { MoveReview, PosAnalysis } from './types';
+import type { MoveClass, MoveReview, PosAnalysis } from './types';
+
+/** how a puzzle is answered: play the move(s), tap the pieces in danger, or say whether a move was a blunder */
+export type PuzzleKind = 'solve' | 'threat' | 'judge';
+
+/** which training mode a puzzle belongs to */
+export type PuzzleGroup = 'rated' | 'mistake' | 'punish' | 'mate' | 'tactic' | 'threat' | 'judge';
 
 export interface Puzzle {
   id: string;
@@ -17,11 +23,36 @@ export interface Puzzle {
   source: 'game' | 'lichess' | 'bundled';
   /** the opponent move that was just played (highlighted on the board) */
   lastMove?: Uci | null;
+  /** default 'solve' */
+  kind?: PuzzleKind;
+  /** default 'rated' */
+  group?: PuzzleGroup;
+  /** one line of set-up shown while solving, e.g. "You played Nxe5 here" */
+  context?: string;
+  /** plain-English explanation shown once the puzzle is over */
+  explain?: string[];
+  /** the habit to remember */
+  lesson?: string;
+  /** where in the games this came from, for the "open the game" link */
+  from?: { gameId: string; ply: number };
+  /** spot-the-threat: your pieces in danger (empty = a calm position) and who attacks them */
+  threat?: { danger: Square[]; arrows: { from: Square; to: Square }[]; lastSan: string | null };
+  /** safe-or-blunder: the move to judge */
+  judge?: { move: Uci; san: string; verdict: 'blunder' | 'safe'; reply: Uci | null; cls: MoveClass; byUser: boolean };
   /** only for puzzles from your games */
   game?: { gameId: string; ply: number; played: string; best: string; opponent: string; loss: number; moveNo: string };
 }
 
-export const sideOf = (fen: string): Color => (fen.split(' ')[1] === 'b' ? 'b' : 'w');
+/** Puzzle modes built from your own games whose puzzles have a difficulty, so they move your rating like the rated trainer. */
+export const RATED_GAME_GROUPS: PuzzleGroup[] = ['mate', 'tactic', 'punish'];
+
+/** Does solving or failing this puzzle change the puzzle rating? Other game-based modes are practice only. */
+export function countsForRating(p: Pick<Puzzle, 'source' | 'group' | 'rating'>): boolean {
+  if (p.source !== 'game') return true;
+  return RATED_GAME_GROUPS.includes(p.group ?? 'rated') && p.rating > 0;
+}
+
+export const sideOf = (fen: string): Color =>(fen.split(' ')[1] === 'b' ? 'b' : 'w');
 
 /** Is `uci` legal here, and does it give checkmate? (a checkmating move always solves a puzzle) */
 export function givesMate(fen: string, uci: Uci): boolean {
@@ -74,12 +105,15 @@ export function puzzlesFromReview(
     const A = positions[m.ply];
     if (!A || !A.lines[0] || A.legal < 2) continue;
     const gap = A.lines[1] ? m.epBest - epFor(A.lines[1], m.color) : 1;
-    if (gap < 0.12 || m.epBest < 0.55 || m.loss < 0.1) continue;
+    // Either there was a clearly winning idea, or an "only move" that saves the game (defending is a skill too).
+    const attack = gap >= 0.12 && m.epBest >= 0.55;
+    const defence = !attack && gap >= 0.3 && m.epBest >= 0.35;
+    if ((!attack && !defence) || m.loss < 0.1) continue;
     const fen = fenBefore(m.ply);
-    const solution = trimLine(fen, A.lines[0].pv);
+    const solution = defence ? trimLine(fen, A.lines[0].pv, 1) : trimLine(fen, A.lines[0].pv);
     if (!solution.length) continue;
     const mate = A.lines[0].mate != null && (A.lines[0].mate > 0) === (m.color === 'w') ? Math.abs(A.lines[0].mate) : null;
-    const themes = [mate ? `mateIn${mate}` : m.epBest > 0.85 ? 'crushing' : 'advantage', 'yourMistake'];
+    const themes = [mate ? `mateIn${mate}` : defence ? 'defence' : m.epBest > 0.85 ? 'crushing' : 'advantage', 'yourMistake'];
     out.push({
       id: `g:${gameId}:${m.ply}`,
       fen,
@@ -88,6 +122,9 @@ export function puzzlesFromReview(
       rating: 0,
       themes,
       source: 'game',
+      kind: 'solve',
+      group: 'mistake',
+      from: { gameId, ply: m.ply },
       game: {
         gameId,
         ply: m.ply,

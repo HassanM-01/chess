@@ -22,6 +22,21 @@ export interface OpenedFile {
   text: string;
 }
 
+export interface PhoneLink {
+  label: string;
+  url: string;
+}
+
+/** Phone access: the desktop app serving itself to a phone over Tailscale or Wi-Fi. */
+export interface PhoneStatus {
+  enabled: boolean;
+  running: boolean;
+  port: number;
+  /** pairing links, best first (empty while stopped) */
+  links: PhoneLink[];
+  error: string;
+}
+
 export interface DesktopApi {
   engine: {
     info(): Promise<EngineInfo>;
@@ -52,7 +67,22 @@ export interface DesktopApi {
     onProgress(cb: (p: { phase: string; fraction: number; count: number }) => void): () => void;
     cancel(): void;
   };
+  /** the optional AI coach; the API key is stored encrypted by the main process and never comes back to the page */
+  coach: {
+    hasKey(): Promise<boolean>;
+    setKey(key: string): Promise<void>;
+    clearKey(): Promise<void>;
+    ask(req: { system: string; messages: { role: 'user' | 'assistant'; content: string }[] }): Promise<string>;
+  };
   openExternal(url: string): void;
+  /** Set on a phone or browser that reaches the app over the network instead of running inside the desktop window. */
+  isRemote?: boolean;
+  /** Phone access controls; only in the desktop window. */
+  phone?: {
+    status(): Promise<PhoneStatus>;
+    setEnabled(on: boolean): Promise<PhoneStatus>;
+    newCode(): Promise<PhoneStatus>;
+  };
 }
 
 declare global {

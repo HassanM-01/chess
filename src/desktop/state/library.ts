@@ -21,6 +21,8 @@ export function desktopChesscom(): ChesscomClient {
 }
 
 const idOf = (g: NewGame): string => `g_${hashStr(g.externalId ?? g.pgn)}`;
+/** the library id a game will get when it is added (so a page can open it right away) */
+export const gameIdOf = idOf;
 
 interface LibraryState {
   loaded: boolean;

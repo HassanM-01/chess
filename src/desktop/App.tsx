@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
-import { HashRouter, NavLink, Route, Routes } from 'react-router-dom';
+import { HashRouter, NavLink, Route, Routes, useLocation } from 'react-router-dom';
 import { PieceSprite } from '@/components/PieceSprite';
 import { getEngine, useEngineStatus } from './lib/desktopEngine';
 import { AnalysisPage } from './pages/AnalysisPage';
 import { LibraryPage } from './pages/LibraryPage';
+import { PlayPage } from './pages/PlayPage';
 import { PuzzlesPage } from './pages/PuzzlesPage';
 import { ReviewPage } from './pages/ReviewPage';
 import { SettingsPage } from './pages/SettingsPage';
@@ -26,6 +27,7 @@ function Sidebar(): JSX.Element {
         <span className="mark" aria-hidden="true">♞</span> Blunder Check
       </div>
       <NavLink to="/" end className="dk-link">Games</NavLink>
+      <NavLink to="/play" className="dk-link">Play</NavLink>
       <NavLink to="/puzzles" className="dk-link">Puzzles</NavLink>
       <NavLink to="/analysis" className="dk-link">Analysis</NavLink>
       <NavLink to="/settings" className="dk-link">Settings</NavLink>
@@ -42,6 +44,15 @@ function Sidebar(): JSX.Element {
       </div>
     </nav>
   );
+}
+
+/** Each tab starts at the top (on a phone the whole page scrolls, so the previous tab's position would carry over). */
+function ScrollToTop(): null {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    document.querySelector('.dk-main')?.scrollTo(0, 0);
+  }, [pathname]);
+  return null;
 }
 
 export function DesktopApp(): JSX.Element {
@@ -71,12 +82,14 @@ export function DesktopApp(): JSX.Element {
   return (
     <HashRouter>
       <PieceSprite />
+      <ScrollToTop />
       <div className="dk-shell">
         <Sidebar />
         <main className="dk-main">
           <Routes>
             <Route path="/" element={<LibraryPage />} />
             <Route path="/review/:id" element={<ReviewPage />} />
+            <Route path="/play" element={<PlayPage />} />
             <Route path="/puzzles" element={<PuzzlesPage />} />
             <Route path="/analysis" element={<AnalysisPage />} />
             <Route path="/settings" element={<SettingsPage />} />

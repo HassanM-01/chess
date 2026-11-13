@@ -1,10 +1,84 @@
 import { useEffect, useState } from 'react';
 import { PRESETS, type PresetKey } from '@/review/presets';
-import type { SystemInfo } from '../api';
+import type { PhoneStatus, SystemInfo } from '../api';
 import { applyEngineSettings, getEngine, useEngineStatus } from '../lib/desktopEngine';
+import { askCoachTest } from '../lib/coachTest';
+import { removeCoachKey, saveCoachKey, useCoachKey } from '../lib/coach';
 import { getSystem, useSettings } from '../state/settings';
 
 const HASH_CHOICES = [256, 512, 1024, 2048, 4096, 8192, 12288, 16384];
+
+/** Turn on the small web server that lets a phone use this app (and this computer's Stockfish) from Safari. */
+function PhoneAccessCard(): JSX.Element | null {
+  const api = window.desktop?.phone;
+  const [st, setSt] = useState<PhoneStatus | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState('');
+  const [copied, setCopied] = useState('');
+  useEffect(() => {
+    void api?.status().then(setSt);
+  }, [api]);
+  if (!api || !st) return null;
+  const act = async (fn: () => Promise<PhoneStatus>): Promise<void> => {
+    setBusy(true);
+    setErr('');
+    try {
+      setSt(await fn());
+    } catch (e) {
+      setErr((e instanceof Error ? e.message : String(e)).replace(/^Error invoking remote method '[^']+': (Error: )?/, ''));
+    } finally {
+      setBusy(false);
+    }
+  };
+  const copy = (url: string): void => {
+    void navigator.clipboard?.writeText(url).then(() => {
+      setCopied(url);
+      setTimeout(() => setCopied(''), 1500);
+    });
+  };
+  return (
+    <div className="dk-card stack-s" data-testid="phone-access">
+      <h3>Phone access</h3>
+      <p className="small muted">
+        Use Blunder Check from your phone's browser while Stockfish keeps running on this computer at full strength. Install Tailscale on both devices to use it
+        from anywhere; without it, the phone has to be on the same Wi-Fi. Games, reviews and puzzle progress are shared with this window.
+      </p>
+      <label className="row" style={{ gap: 8 }}>
+        <input type="checkbox" checked={st.enabled} disabled={busy} onChange={(e) => void act(() => api.setEnabled(e.target.checked))} data-testid="phone-toggle" />
+        <span>Let my phone connect (port {st.port})</span>
+      </label>
+      {st.error && <div className="err small">{st.error}</div>}
+      {err && <div className="err small">{err}</div>}
+      {st.running && (
+        <>
+          <p className="small">
+            Open one of these links on your phone <b>once</b> to pair it, then tap Share → Add to Home Screen. Keep the link private: anyone who has it and can reach
+            this computer can use the app.
+          </p>
+          {st.links.length ? (
+            st.links.map((l) => (
+              <div key={l.url} className="phone-link">
+                <span className="small muted">{l.label}</span>
+                <code>{l.url}</code>
+                <button className="linklike small" style={{ alignSelf: 'flex-start' }} onClick={() => copy(l.url)}>{copied === l.url ? 'Copied' : 'Copy link'}</button>
+              </div>
+            ))
+          ) : (
+            <div className="small muted">No network connection found. Connect to Wi-Fi or start Tailscale, then reopen this page.</div>
+          )}
+          <div className="row">
+            <button className="btn" disabled={busy} onClick={() => void act(() => api.newCode())}>New pairing link</button>
+            <span className="small muted grow">Signs out every phone that was paired before.</span>
+          </div>
+          <p className="small muted">
+            The phone only works while this app is open (minimized is fine), or while <code>npm run phone</code> is running. If Windows asks about the firewall,
+            allow access.
+          </p>
+        </>
+      )}
+    </div>
+  );
+}
 
 export function SettingsPage(): JSX.Element {
   const s = useSettings();
@@ -12,6 +86,10 @@ export function SettingsPage(): JSX.Element {
   const [sys, setSys] = useState<SystemInfo | null>(null);
   const [path, setPath] = useState<{ path: string; found: boolean } | null>(null);
   const [note, setNote] = useState('');
+  const hasKey = useCoachKey();
+  const [keyText, setKeyText] = useState('');
+  const [coachNote, setCoachNote] = useState<{ ok: boolean; text: string } | null>(null);
+  const [coachBusy, setCoachBusy] = useState(false);
 
   useEffect(() => {
     void getSystem().then(setSys);
@@ -36,11 +114,11 @@ export function SettingsPage(): JSX.Element {
           <span className={`pill ${engine.status === 'ready' ? 'good' : engine.status === 'failed' ? 'bad' : ''}`}>
             {engine.status === 'ready' ? 'running' : engine.status === 'loading' ? 'starting' : engine.status === 'failed' ? 'not working' : 'idle'}
           </span>
-          <div className="muted ellipsis">{path?.found ? path.path : 'Stockfish was not found.'}</div>
+          <div className="muted ellipsis">{path?.found ? (window.desktop?.isRemote ? `Running on your computer: ${path.path}` : path.path) : 'Stockfish was not found.'}</div>
           {engine.error && <div className="err">{engine.error}</div>}
         </div>
         <div className="row">
-          <button
+          {!window.desktop?.isRemote && <button
             className="btn"
             onClick={async () => {
               const p = await window.desktop!.engine.pick();
@@ -52,7 +130,7 @@ export function SettingsPage(): JSX.Element {
             }}
           >
             Choose a different Stockfish…
-          </button>
+          </button>}
           <button className="btn" onClick={() => { applyEngineSettings(); setNote('Engine restarted.'); }}>Restart engine</button>
         </div>
         {note && <div className="small muted">{note}</div>}
@@ -72,6 +150,8 @@ export function SettingsPage(): JSX.Element {
           <div className="small muted">{(sys.totalMemMb / 1024).toFixed(0)} GB installed. More hash helps long, deep searches.</div>
         </div>
       </div>
+
+      <PhoneAccessCard />
 
       <div className="dk-card stack">
         <h3>How deep to analyze</h3>
@@ -101,6 +181,50 @@ export function SettingsPage(): JSX.Element {
           Each position is searched until it reaches the target depth or the time limit, whichever comes first. Two or more lines are needed to spot Great moves and to build puzzles.
           Changing this only affects reviews you start afterwards.
         </p>
+      </div>
+
+      <div className="dk-card stack-s" data-testid="coach-settings">
+        <h3>AI coach (optional)</h3>
+        <p className="small muted">
+          The coach explains a move or puzzle in simple words and answers follow-up questions. It only talks about what Stockfish has already confirmed, so it cannot make up moves.
+          It uses <b>your own Anthropic API key</b> (made at console.anthropic.com; this is separate from a Claude.ai subscription and is billed by Anthropic per question, usually a small fraction of a cent to a few cents).
+        </p>
+        <p className="small muted">
+          When you press "Ask the coach", the position, the moves and the engine's analysis of that one move or puzzle are sent to Anthropic. Your username and your other games are not sent.
+          The key is stored encrypted on this computer and is never shown again.
+        </p>
+        <button className="linklike small" onClick={() => window.desktop?.openExternal('https://console.anthropic.com/settings/keys')}>Open the Anthropic page where keys are made</button>
+        {hasKey ? (
+          <div className="row">
+            <span className="pill good" data-testid="coach-key-saved">A key is saved</span>
+            <button className="btn" onClick={() => { void removeCoachKey(); setCoachNote(null); }}>Remove the key</button>
+          </div>
+        ) : (
+          <div className="row">
+            <input className="grow" type="password" autoComplete="off" spellCheck={false} placeholder="sk-ant-..." value={keyText} onChange={(e) => setKeyText(e.target.value)} data-testid="coach-key-input" />
+            <button
+              className="btn primary"
+              disabled={!keyText.trim() || coachBusy}
+              data-testid="coach-key-save"
+              onClick={async () => {
+                setCoachBusy(true);
+                setCoachNote(null);
+                try {
+                  await saveCoachKey(keyText);
+                  setKeyText('');
+                  setCoachNote(await askCoachTest());
+                } catch (e) {
+                  setCoachNote({ ok: false, text: (e instanceof Error ? e.message : String(e)).replace(/^Error invoking remote method '[^']+': (Error: )?/, '') });
+                } finally {
+                  setCoachBusy(false);
+                }
+              }}
+            >
+              {coachBusy ? 'Testing…' : 'Save and test'}
+            </button>
+          </div>
+        )}
+        {coachNote && <div className={coachNote.ok ? 'small' : 'err small'}>{coachNote.text}</div>}
       </div>
 
       <div className="dk-card stack-s">

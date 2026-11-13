@@ -31,7 +31,18 @@ const api: DesktopApi = {
     onProgress: (cb) => listen('puzzles:progress', cb),
     cancel: () => ipcRenderer.send('puzzles:cancel'),
   },
+  coach: {
+    hasKey: () => ipcRenderer.invoke('coach:hasKey'),
+    setKey: (key) => ipcRenderer.invoke('coach:setKey', key),
+    clearKey: () => ipcRenderer.invoke('coach:clearKey'),
+    ask: (req) => ipcRenderer.invoke('coach:ask', req),
+  },
   openExternal: (url) => ipcRenderer.send('app:openExternal', url),
+  phone: {
+    status: () => ipcRenderer.invoke('remote:status'),
+    setEnabled: (on) => ipcRenderer.invoke('remote:set', on),
+    newCode: () => ipcRenderer.invoke('remote:newCode'),
+  },
 };
 
 contextBridge.exposeInMainWorld('desktop', api);

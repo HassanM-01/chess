@@ -1,9 +1,9 @@
 // Puzzle bank + the player's puzzle rating. Everything is local.
 import { create } from 'zustand';
 import { loadBundledPuzzles } from '@/data/bundledPuzzles';
-import { gameFens } from '@/chess/helpers';
-import { reviewMoves } from '@/review/classify';
-import { eloUpdate, fromLichessRow, pickPuzzle, puzzlesFromReview, type Puzzle } from '@/review/puzzles';
+import { mineGame } from '@/review/mineGames';
+import type { ExplainTag } from '@/review/explain';
+import { countsForRating, eloUpdate, fromLichessRow, pickPuzzle, type Puzzle, type PuzzleGroup } from '@/review/puzzles';
 import type { StoredReview } from '@/review/types';
 import { useLibrary } from './library';
 
@@ -28,21 +28,56 @@ interface LichessFile {
   rows: [string, string, string, number, string][];
 }
 
+export type PuzzleMode = PuzzleGroup;
+
+/** What the user's reviewed games show they get wrong most often. */
+export interface WeakSpots {
+  tags: Partial<Record<ExplainTag, number>>;
+  /** the user's inaccuracies, mistakes, misses and blunders across all reviewed games */
+  badMoves: number;
+  games: number;
+}
+
 interface PuzzleState {
   loaded: boolean;
   progress: PuzzleProgress;
   rated: Puzzle[];
-  mine: Puzzle[];
+  /** every puzzle built from your reviewed games, all modes together */
+  game: Puzzle[];
+  weak: WeakSpots;
+  mining: boolean;
   lichessCount: number;
   lichessImportedAt: string | null;
   load(): Promise<void>;
-  /** rebuild "My mistakes" from every finished review in the library */
+  /** rebuild the game-based modes from every reviewed game in the library */
   refreshMine(): Promise<void>;
   reloadLichess(): Promise<void>;
-  next(mode: 'rated' | 'mine', theme: string | null): Puzzle | null;
+  poolFor(mode: PuzzleMode, theme: string | null): Puzzle[];
+  next(mode: PuzzleMode, theme: string | null): Puzzle | null;
   /** record a finished puzzle; returns the rating change */
   finish(p: Puzzle, ok: boolean): number;
+  /** lower the rating so the rated trainer serves easier puzzles (the easiest ones are rated about 500) */
+  easier(): void;
 }
+
+const rand = <T,>(xs: T[]): T => xs[Math.floor(Math.random() * xs.length)];
+const tick = (): Promise<void> => new Promise((r) => setTimeout(r, 0));
+
+/** Choose the next puzzle from your own games: new ones first, then the ones you got wrong, then anything. */
+export function pickFromGames(pool: Puzzle[], p: PuzzleProgress, avoid?: string): Puzzle | null {
+  const pool2 = pool.length > 1 && avoid ? pool.filter((x) => x.id !== avoid) : pool;
+  if (!pool2.length) return null;
+  const unseen = pool2.filter((x) => !(x.id in p.seen));
+  if (unseen.length) return rand(unseen);
+  const last = new Map<string, boolean>();
+  for (const h of p.history) last.set(h.id, h.ok);
+  const missed = pool2.filter((x) => last.get(x.id) === false);
+  if (missed.length) return rand(missed);
+  return rand(pool2.slice().sort((a, b) => (p.seen[a.id] ?? 0) - (p.seen[b.id] ?? 0)).slice(0, Math.max(10, Math.ceil(pool2.length / 3))));
+}
+
+/** per-game results, so reopening the screen does not redo the work */
+const mined = new Map<string, { stamp: string; puzzles: Puzzle[]; weak: WeakSpots['tags']; bad: number }>();
 
 export const usePuzzles = create<PuzzleState>((set, get) => {
   const save = (): void => void window.desktop?.store.write('puzzle-progress', get().progress);
@@ -50,7 +85,9 @@ export const usePuzzles = create<PuzzleState>((set, get) => {
     loaded: false,
     progress: FRESH,
     rated: [],
-    mine: [],
+    game: [],
+    weak: { tags: {}, badMoves: 0, games: 0 },
+    mining: false,
     lichessCount: 0,
     lichessImportedAt: null,
     async load() {
@@ -63,6 +100,7 @@ export const usePuzzles = create<PuzzleState>((set, get) => {
         rating: 500 + Math.round(((b.moves.length - 1) / 2) * 100),
         themes: b.themes,
         source: 'bundled',
+        group: 'rated',
         lastMove: b.lastMove ?? null,
       }));
       set({ progress: { ...FRESH, ...(progress ?? {}) }, rated, loaded: true });
@@ -76,38 +114,57 @@ export const usePuzzles = create<PuzzleState>((set, get) => {
         return;
       }
       const li = f.rows.map(fromLichessRow).filter((p): p is Puzzle => !!p);
+      for (const p of li) p.group = 'rated';
       set({ rated: [...bundled, ...li], lichessCount: li.length, lichessImportedAt: f.importedAt });
     },
     async refreshMine() {
-      const out: Puzzle[] = [];
-      for (const g of useLibrary.getState().games) {
-        const r = await window.desktop?.store.read<StoredReview>(`reviews/${g.id}`);
-        if (!r || r.version !== 1 || r.positions.length < 2) continue;
-        const moves = reviewMoves(g.startFen, g.movesUci, r.positions);
-        const fens = gameFens(g.startFen, g.movesUci);
-        const ps = puzzlesFromReview(g.id, (c) => (c === 'w' ? g.white : g.black) ?? 'opponent', (ply) => fens[ply], r.positions, moves, g.userColor);
-        // show the opponent's previous move on the board
-        for (const p of ps) {
-          const ply = p.game!.ply;
-          p.lastMove = ply > 0 ? g.movesUci[ply - 1] : null;
+      if (get().mining) return;
+      set({ mining: true });
+      try {
+        const all: Puzzle[] = [];
+        const tags: WeakSpots['tags'] = {};
+        let bad = 0;
+        let games = 0;
+        for (const g of useLibrary.getState().games) {
+          const r = await window.desktop?.store.read<StoredReview>(`reviews/${g.id}`);
+          if (!r || r.version !== 1 || r.positions.length < 2) continue;
+          const stamp = `${r.updatedAt}:${r.positions.length}:${g.userColor ?? ''}`;
+          let e = mined.get(g.id);
+          if (!e || e.stamp !== stamp) {
+            const res = mineGame({ id: g.id, startFen: g.startFen, movesUci: g.movesUci, white: g.white, black: g.black, userColor: g.userColor }, r.positions);
+            e = { stamp, puzzles: res.puzzles, weak: res.weak, bad: res.badMoves };
+            mined.set(g.id, e);
+            await tick(); // keep the window responsive while a big library is processed
+          }
+          games++;
+          all.push(...e.puzzles);
+          bad += e.bad;
+          for (const [k, v] of Object.entries(e.weak)) tags[k as ExplainTag] = (tags[k as ExplainTag] ?? 0) + (v ?? 0);
         }
-        out.push(...ps);
+        set({ game: all, weak: { tags, badMoves: bad, games } });
+      } finally {
+        set({ mining: false });
       }
-      set({ mine: out });
+    },
+    poolFor(mode, theme) {
+      const s = get();
+      const pool = mode === 'rated' ? s.rated : s.game.filter((p) => p.group === mode);
+      return pool.filter((p) => !theme || p.themes.includes(theme));
     },
     next(mode, theme) {
       const s = get();
-      const pool = (mode === 'mine' ? s.mine : s.rated).filter((p) => !theme || p.themes.includes(theme));
-      if (mode === 'mine') {
-        const todo = pool.filter((p) => !s.progress.done[p.id]);
-        return (todo.length ? todo : pool)[Math.floor(Math.random() * (todo.length ? todo.length : pool.length))] ?? null;
-      }
-      return pickPuzzle(pool, s.progress.rating, s.progress.seen);
+      const pool = s.poolFor(mode, theme);
+      if (mode === 'rated') return pickPuzzle(pool, s.progress.rating, s.progress.seen);
+      return pickFromGames(pool, s.progress);
+    },
+    easier() {
+      const pr = get().progress;
+      set({ progress: { ...pr, rating: Math.max(300, pr.rating - 250) } });
+      save();
     },
     finish(p, ok) {
       const pr = get().progress;
-      const rated = p.source !== 'game';
-      const delta = rated ? eloUpdate(pr.rating, p.rating, ok) : 0;
+      const delta = countsForRating(p) ? eloUpdate(pr.rating, p.rating, ok) : 0;
       const streak = ok ? pr.streak + 1 : 0;
       const rating = Math.max(100, pr.rating + delta);
       const progress: PuzzleProgress = {
@@ -127,4 +184,3 @@ export const usePuzzles = create<PuzzleState>((set, get) => {
     },
   };
 });
-

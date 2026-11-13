@@ -23,6 +23,7 @@
     "desktop:build": "npm run desktop:build:main && npm run desktop:build:ui",
     "desktop": "npm run desktop:build && electron .",
     "desktop:dev": "node scripts/desktop-dev.mjs",
+    "phone": "npm run desktop:build && electron . --headless",
     "desktop:pack": "npm run desktop:build && electron-builder --dir",
     "build:openings": "node scripts/build-openings.mjs",
     "e2e:desktop": "playwright test --config playwright.desktop.config.ts",

@@ -1,0 +1,10 @@
+{
+  "name": "Blunder Check",
+  "short_name": "Blunder Check",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#262522",
+  "theme_color": "#1f1e1c",
+  "icons": [{ "src": "apple-touch-icon.png", "sizes": "180x180", "type": "image/png" }]
+}

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { HashRouter, NavLink, Route, Routes } from 'react-router-dom';
+import { HashRouter, NavLink, Route, Routes, useLocation } from 'react-router-dom';
 import { PieceSprite } from '@/components/PieceSprite';
 import { getEngine, useEngineStatus } from './lib/desktopEngine';
 import { AnalysisPage } from './pages/AnalysisPage';
@@ -46,6 +46,15 @@ function Sidebar(): JSX.Element {
   );
 }
 
+/** Each tab starts at the top (on a phone the whole page scrolls, so the previous tab's position would carry over). */
+function ScrollToTop(): null {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    document.querySelector('.dk-main')?.scrollTo(0, 0);
+  }, [pathname]);
+  return null;
+}
+
 export function DesktopApp(): JSX.Element {
   const [ready, setReady] = useState(false);
   useEffect(() => {
@@ -73,6 +82,7 @@ export function DesktopApp(): JSX.Element {
   return (
     <HashRouter>
       <PieceSprite />
+      <ScrollToTop />
       <div className="dk-shell">
         <Sidebar />
         <main className="dk-main">

@@ -2,6 +2,7 @@
 import { useSyncExternalStore } from 'react';
 import { Engine, type EngineTransport } from '@/engine/engine';
 import type { EngineStatus } from '@/engine/types';
+import { ENGINE_LOST_EVENT } from '../remote';
 import { resolveEngineOptions, useSettings } from '../state/settings';
 
 function ipcTransport(): EngineTransport {
@@ -80,6 +81,9 @@ export function useEngineStatus(): { status: EngineStatus; name: string; error: 
   );
   return { status, name: e.name, error: lastError };
 }
+
+// On a phone: if the computer stopped this page's engine while the phone was away, start a fresh one.
+if (typeof window !== 'undefined') window.addEventListener(ENGINE_LOST_EVENT, () => instance?.requestRestart());
 
 // Re-start the engine when the user changes threads or hash.
 let prev = '';
